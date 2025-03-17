@@ -1,4 +1,4 @@
-# DG-LAB-V3SP2V2BPC
+# DG-LAB-V3-SOCKET-To-V2-BLE
 ### DG-LAB-E-STIM-Power-Box-V3-SOCKET-Protocol-To-V2-Bluetooth-Protocol-Converter
 
 ## 介绍：
