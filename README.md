@@ -1,5 +1,5 @@
-# DGS2B
-### DG-LAB-E-STIM-Power-Box-V3-SOCKET-Server-To-V2-Bluetooth-Converter
+# DG-LAB-V3SP2V2BPC
+### DG-LAB-E-STIM-Power-Box-V3-SOCKET-Protocol-To-V2-Bluetooth-Protocol-Converter
 
 ## 介绍：
 
