@@ -37,6 +37,10 @@ pip install pyside6 qasync websockets bleak
 
  - [ ] 保存配置和配置文件
 
+ - [ ] 修复回调数据
+
+ - [ ] 显示设备电池电量
+
 ## 辅助工具：
 
 [在线QR码识别器](https://cli.im/deqr)
