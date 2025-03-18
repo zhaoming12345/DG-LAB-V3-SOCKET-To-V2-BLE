@@ -27,16 +27,13 @@ pip install pyside6 qasync websockets bleak
 
 ## 预览图：
 
-![PV](https://github.com/user-attachments/assets/34605fe6-b148-4664-a574-34d16e75a0a2)
+![PV2](https://github.com/user-attachments/assets/66724157-e75a-4a73-b3bb-e2ea045db18f)
 
 ## ToDoList：
 
  - [ ] 控制台和指令输入支持
  - [ ] 波形显示
- - [ ] 保存配置和配置文件
  - [ ] 修复回调数据
- - [ ] 显示设备电池电量
- - [ ] 深色模式
 
 ## 辅助工具：
 
