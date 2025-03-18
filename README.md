@@ -10,19 +10,18 @@
 ## 需要安装的依赖列表：
 
  - Python 3.7+
-
  - PySide6
-
  - qasync
-
  - websockets
-
  - bleak
+ - pyqtgraph
+
+###### *离线编译构建在计划中，以后可能不再需要安装依赖和使用终端命令行启动*
 
 ### 安装指令：
 
 ```bash
-pip install pyside6 qasync websockets bleak
+pip install pyside6 qasync websockets bleak pyqtgraph
 ```
 
 ## 预览图：
@@ -31,9 +30,8 @@ pip install pyside6 qasync websockets bleak
 
 ## ToDoList：
 
- - [ ] 控制台和指令输入支持
- - [ ] 波形显示
- - [ ] 修复回调数据
+ - [x] 修复回调数据（有待验证）
+ - [ ] 修复重新扫描设备时的错误
 
 ## 辅助工具：
 
