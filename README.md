@@ -26,7 +26,7 @@ pip install pyside6 qasync websockets bleak pyqtgraph
 
 ## 预览图：
 
-![PV2](https://github.com/user-attachments/assets/66724157-e75a-4a73-b3bb-e2ea045db18f)
+![PV3](https://github.com/user-attachments/assets/079328e6-eaeb-4e15-b2db-963a6502b615)
 
 ## ToDoList：
 
