@@ -55,15 +55,23 @@
     },
     
     "log": {
-        "title": "Operation Log"
+        "title": "Operation Log",
+        "show": "Show Log",
+        "hide": "Hide Log",
+        "clear": "Clear Log"
     },
     
     "dialog": {
         "choose_device": "Select Bluetooth Device",
         "refresh_devices": "Refresh Device List",
+        "cancel": "Cancel",
         "error": "Error",
         "bluetooth_not_available": "Bluetooth functionality not detected. Please ensure your device has Bluetooth enabled and working properly.",
         "scan_failed": "Failed to scan devices: {0}",
+        "scan_window_error": "Error occurred while opening scan window: {0}",
+        "scan_complete": "Scan Complete",
+        "no_devices_found": "No Devices Found",
+        "scanning": "Scanning for devices...",
         "invalid_url": "Invalid WebSocket URL. Please use the correct format (e.g., ws://example.com)",
         "save_config_failed": "Failed to save configuration. Please check file permissions or disk space"
     },
@@ -88,10 +96,16 @@
         "message_process_error": "❌ Message processing error: {0}",
         "strength_limit_updated": "✅ Strength limits updated and saved: A={0} B={1}",
         "strength_limit_update_failed": "❌ Failed to update strength limits: A={0} B={1}",
+        "strength_limit_range_error": "❌ Strength limit must be between 0 and 200",
         "invalid_number": "❌ Please enter valid numbers",
         "server_address_empty": "❌ Please set server address first",
         "network_error": "🔴 Network error: {0}",
         "received_command": "📥 Received command: {0}...",
-        "theme_changed": "✨ Switched to {0} mode"
+        "theme_changed": "✨ Switched to {0} mode",
+        "websocket_not_connected": "WebSocket not connected",
+        "websocket_message_sent": "Message sent to server",
+        "websocket_send_failed": "Failed to send message to server: {0}",
+        "websocket_closed": "WebSocket connection closed",
+        "websocket_error": "Error processing WebSocket message: {0}"
     }
 } 
