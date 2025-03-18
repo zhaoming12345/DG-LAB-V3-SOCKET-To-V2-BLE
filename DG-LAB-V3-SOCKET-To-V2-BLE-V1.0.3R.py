@@ -20,6 +20,7 @@ import websockets
 from bleak import BleakClient, discover, BleakError
 from collections import deque
 from PySide6.QtGui import QIntValidator
+import pyqtgraph as pg
 
 # ------------ 事件循环策略（Windows必需）------------
 if sys.platform == 'win32':
@@ -29,7 +30,7 @@ if sys.platform == 'win32':
 logging.basicConfig(level=logging.DEBUG)
 
 # ------------ 全局配置 ------------
-CONFIG_FILE = "dg_lab_config.json"
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dg_lab_config.json")
 SOCKET_URI = ""
 BLE_DEVICE_ADDRESS = ""
 DEVICE_ID = ""
@@ -38,6 +39,12 @@ DARK_MODE = False
 LANG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "languages")
 CURRENT_LANG = "zh_CN"
 TRANSLATIONS = {}
+
+# ------------ BLE 特征值 UUID ------------
+BLE_CHAR_PWM_A34 = "0000ffe1-0000-1000-8000-00805f9b34fb"
+BLE_CHAR_PWM_B34 = "0000ffe2-0000-1000-8000-00805f9b34fb"
+BLE_CHAR_PWM_AB2 = "0000ffe3-0000-1000-8000-00805f9b34fb"
+BLE_CHAR_BATTERY = "0000ffe4-0000-1000-8000-00805f9b34fb"
 
 # ------------ 多语言支持函数 ------------
 def load_available_languages():
@@ -146,120 +153,115 @@ def translate(key, *args):
 
 # ------------ 蓝牙服务配置 ------------
 BLE_SERVICE_UUID = "955A180b-0FE2-F5AA-A094-84B8D4F3E8AD"
-BLE_CHAR_PWM_AB2 = "955A1504-0FE2-F5AA-A094-84B8D4F3E8AD"
-BLE_CHAR_PWM_A34 = "955A1505-0FE2-F5AA-A094-84B8D4F3E8AD"
-BLE_CHAR_PWM_B34 = "955A1506-0FE2-F5AA-A094-84B8D4F3E8AD"
 BLE_CHAR_DEVICE_ID = "955A1501-0FE2-F5AA-A094-84B8D4F3E8AD"  #设备ID特征
 BLE_SERVICE_BATTERY = "0000180f-0000-1000-8000-00805f9b34fb"  # 电池服务
-BLE_CHAR_BATTERY = "00002a19-0000-1000-8000-00805f9b34fb"    # 电量特征
 
 # ------------ 界面样式定义 ------------
 LIGHT_STYLE = """
 QMainWindow, QDialog {
-    background-color: #f5f5f5;
-    color: #333333;
+    background-color: #f0f0f0;
 }
 QGroupBox {
     border: 1px solid #cccccc;
     border-radius: 5px;
-    margin-top: 1ex;
+    margin-top: 10px;
     font-weight: bold;
-    color: #444444;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 10px;
-    padding: 0 3px 0 3px;
+    padding: 0 3px;
 }
 QPushButton {
-    background-color: #4a86e8;
+    background-color: #007bff;
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 5px 15px;
+    border-radius: 3px;
 }
 QPushButton:hover {
-    background-color: #3a76d8;
-}
-QPushButton:pressed {
-    background-color: #2a66c8;
+    background-color: #0056b3;
 }
 QPushButton:disabled {
     background-color: #cccccc;
-    color: #888888;
 }
 QLineEdit {
-    padding: 4px;
+    padding: 5px;
     border: 1px solid #cccccc;
     border-radius: 3px;
-    background-color: white;
 }
 QTextEdit {
     border: 1px solid #cccccc;
     border-radius: 3px;
-    background-color: white;
-    color: #333333;
-}
-QLabel {
-    color: #333333;
 }
 """
 
 DARK_STYLE = """
 QMainWindow, QDialog {
-    background-color: #2d2d2d;
-    color: #f0f0f0;
+    background-color: #2b2b2b;
+    color: #ffffff;
 }
 QGroupBox {
     border: 1px solid #555555;
     border-radius: 5px;
-    margin-top: 1ex;
+    margin-top: 10px;
     font-weight: bold;
-    color: #e0e0e0;
+    color: #ffffff;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 10px;
-    padding: 0 3px 0 3px;
+    padding: 0 3px;
+    color: #ffffff;
 }
 QPushButton {
-    background-color: #0d6efd;
+    background-color: #0d47a1;
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 5px 15px;
+    border-radius: 3px;
 }
 QPushButton:hover {
-    background-color: #0b5ed7;
-}
-QPushButton:pressed {
-    background-color: #0a58ca;
+    background-color: #1565c0;
 }
 QPushButton:disabled {
-    background-color: #555555;
-    color: #888888;
+    background-color: #424242;
 }
 QLineEdit {
-    padding: 4px;
+    padding: 5px;
     border: 1px solid #555555;
     border-radius: 3px;
-    background-color: #3d3d3d;
-    color: #f0f0f0;
+    background-color: #424242;
+    color: #ffffff;
 }
 QTextEdit {
     border: 1px solid #555555;
     border-radius: 3px;
-    background-color: #3d3d3d;
-    color: #f0f0f0;
+    background-color: #424242;
+    color: #ffffff;
 }
 QLabel {
-    color: #f0f0f0;
+    color: #ffffff;
 }
-QListWidget {
-    background-color: #3d3d3d;
-    color: #f0f0f0;
+QComboBox {
+    background-color: #424242;
+    color: #ffffff;
     border: 1px solid #555555;
     border-radius: 3px;
+    padding: 5px;
+}
+QComboBox::drop-down {
+    border: none;
+}
+QComboBox::down-arrow {
+    image: url(down_arrow.png);
+    width: 12px;
+    height: 12px;
+}
+QComboBox QAbstractItemView {
+    background-color: #424242;
+    color: #ffffff;
+    selection-background-color: #0d47a1;
 }
 """
 
@@ -284,36 +286,143 @@ class DeviceScanner(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(translate("dialog.choose_device"))
-        self.setGeometry(200, 200, 400, 300)
-        layout = QVBoxLayout()
-        self.device_list = QListWidget()
-        self.refresh_btn = QPushButton(translate("dialog.refresh_devices"))
-        layout.addWidget(self.device_list)
-        layout.addWidget(self.refresh_btn)
-        self.setLayout(layout)
-        self.refresh_btn.clicked.connect(self.scan_devices)
+        self.setGeometry(200, 200, 400, 400)
+        self.setModal(True)  # 设置为模态对话框
+        self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)  # 添加窗口标志
         
+        # 创建布局
+        layout = QVBoxLayout()
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # 标题
+        title_label = QLabel(translate("dialog.choose_device"))
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
+        layout.addWidget(title_label)
+        
+        # 设备列表
+        self.device_list = QListWidget()
+        self.device_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #cccccc;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #cccccc;
+            }
+            QListWidget::item:selected {
+                background-color: #007bff;
+                color: white;
+            }
+        """)
+        layout.addWidget(self.device_list)
+        
+        # 按钮区域
+        button_layout = QHBoxLayout()
+        self.refresh_btn = QPushButton(translate("dialog.refresh_devices"))
+        self.refresh_btn.setMinimumWidth(120)
+        self.cancel_btn = QPushButton(translate("dialog.cancel"))
+        self.cancel_btn.setMinimumWidth(120)
+        button_layout.addWidget(self.refresh_btn)
+        button_layout.addWidget(self.cancel_btn)
+        layout.addLayout(button_layout)
+        
+        # 状态标签
+        self.status_label = QLabel(translate("dialog.scanning"))  # 设置初始状态为正在扫描
+        self.status_label.setStyleSheet("color: #666666;")
+        layout.addWidget(self.status_label)
+        
+        self.setLayout(layout)
+        
+        # 连接信号
+        self.refresh_btn.clicked.connect(self.on_refresh_clicked)
+        self.cancel_btn.clicked.connect(self.reject)
+        
+        # 扫描任务
+        self.scan_task = None
+        
+        # 应用主题
+        self.apply_theme()
+        
+        # 初始禁用刷新按钮，等待第一次扫描完成
+        self.refresh_btn.setEnabled(False)
+        
+    def apply_theme(self):
+        """应用深色/浅色主题"""
+        if DARK_MODE:
+            self.setStyleSheet(DARK_STYLE + """
+                QDialog {
+                    background-color: #2b2b2b;
+                }
+                QListWidget {
+                    background-color: #424242;
+                    border: 1px solid #555555;
+                    color: white;
+                }
+                QListWidget::item {
+                    border-bottom: 1px solid #555555;
+                }
+                QListWidget::item:selected {
+                    background-color: #0d47a1;
+                }
+                QLabel {
+                    color: white;
+                }
+            """)
+        else:
+            self.setStyleSheet(LIGHT_STYLE + """
+                QDialog {
+                    background-color: white;
+                }
+                QListWidget {
+                    background-color: white;
+                }
+            """)
+            
     @asyncSlot()
-    async def scan_devices(self):
-        # 检查蓝牙是否可用
-        if not await check_bluetooth_available():
-            QMessageBox.critical(self, 
-                translate("dialog.error"),
-                translate("dialog.bluetooth_not_available"),
-                QMessageBox.Ok)
-            return
-
-        self.device_list.clear()
+    async def start_scan(self):
+        """开始扫描设备"""
         try:
+            if self.scan_task and not self.scan_task.done():
+                return
+                
+            self.refresh_btn.setEnabled(False)
+            self.status_label.setText(translate("dialog.scanning"))
+            self.device_list.clear()
+            
+            # 检查蓝牙是否可用
+            if not await check_bluetooth_available():
+                self.status_label.setText(translate("dialog.bluetooth_not_available"))
+                self.refresh_btn.setEnabled(True)
+                return
+
             devices = await discover()
+            self.device_list.clear()
             for d in devices:
                 item_text = f"{d.name} | {d.address}" if d.name else f"{translate('device.unknown')} | {d.address}"
                 self.device_list.addItem(item_text)
+                
+            if not devices:
+                self.status_label.setText(translate("dialog.no_devices_found"))
+            else:
+                self.status_label.setText(translate("dialog.scan_complete"))
+                
         except Exception as e:
-            QMessageBox.warning(self,
-                translate("dialog.error"),
-                translate("dialog.scan_failed", str(e)),
-                QMessageBox.Ok)
+            self.status_label.setText(translate("dialog.scan_failed", str(e)))
+        finally:
+            self.refresh_btn.setEnabled(True)
+
+    @asyncSlot()
+    async def on_refresh_clicked(self):
+        """处理刷新按钮点击事件"""
+        try:
+            # 直接调用start_scan，不创建新的任务
+            await self.start_scan()
+        except Exception as e:
+            self.status_label.setText(translate("dialog.scan_failed", str(e)))
+            self.refresh_btn.setEnabled(True)
 
 class DeviceSignals(QObject):
     status_update = Signal(str, str)
@@ -323,15 +432,74 @@ class DeviceSignals(QObject):
     connection_changed = Signal(bool)
     language_changed = Signal(str)
         
+class LogWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(translate("log.title"))
+        self.setGeometry(100, 100, 600, 400)
+        
+        # 创建中心部件和布局
+        central_widget = QWidget()
+        layout = QVBoxLayout()
+        
+        # 创建日志文本区域
+        self.log_area = QTextEdit()
+        self.log_area.setReadOnly(True)
+        layout.addWidget(self.log_area)
+        
+        # 清除日志按钮
+        clear_btn = QPushButton(translate("log.clear"))
+        clear_btn.clicked.connect(self.clear_logs)
+        layout.addWidget(clear_btn)
+        
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
+        
+        # 应用当前主题
+        self.apply_theme()
+        
+    def apply_theme(self):
+        style = DARK_STYLE if DARK_MODE else LIGHT_STYLE
+        self.setStyleSheet(style)
+        
+    def closeEvent(self, event):
+        # 通知父窗口日志窗口已关闭
+        if isinstance(self.parent(), MainWindow):
+            self.parent().on_log_window_closed()
+        event.accept()
+        
+    def append_log(self, message):
+        self.log_area.append(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
+        
+    def clear_logs(self):
+        self.log_area.clear()
+
+    def toggle_log_window(self):
+        if self.log_window is None:
+            self.log_window = LogWindow(self)
+        
+        if self.log_window.isVisible():
+            self.log_window.hide()
+            self.log_window_btn.setText(translate("log.show"))
+        else:
+            self.log_window.show()
+            self.log_window_btn.setText(translate("log.hide"))
+
+    def on_log_window_closed(self):
+        """当日志窗口被关闭时调用"""
+        self.log_window_btn.setText(translate("log.show"))
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.signals = DeviceSignals()
         self.ble_client = None
-        self.wave_queues = {'A': deque(), 'B': deque()}
+        self.ws_client = None  # WebSocket客户端
+        self.wave_queues = {'A': deque(maxlen=100), 'B': deque(maxlen=100)}  # 限制队列长度为100个点
         self.current_strength = {'A': 0, 'B': 0}
         self.max_strength = DEFAULT_MAX_STRENGTH.copy()
         self.selected_device = ""
+        self.log_window = None
         
         logging.info("开始初始化主窗口...")
         
@@ -372,6 +540,12 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.setup_connections()
         self.apply_theme()
+        
+        # 启动波形更新定时器
+        self.update_timer = pg.QtCore.QTimer()
+        self.update_timer.timeout.connect(self.update_plot)
+        self.update_timer.start(50)  # 每50ms更新一次
+        
         logging.info("主窗口初始化完成")
 
     def load_config(self):
@@ -379,7 +553,12 @@ class MainWindow(QMainWindow):
         try:
             if os.path.exists(CONFIG_FILE):
                 with open(CONFIG_FILE, 'r') as f:
-                    config = json.load(f)
+                    # 先读取为字符串
+                    config_str = f.read()
+                    # 替换JavaScript布尔值为Python布尔值
+                    config_str = config_str.replace('true', 'True').replace('false', 'False')
+                    # 使用eval安全地解析配置
+                    config = eval(config_str)
                     SOCKET_URI = config.get('socket_uri', "")
                     self.max_strength['A'] = config.get('max_strength_a', DEFAULT_MAX_STRENGTH['A'])
                     self.max_strength['B'] = config.get('max_strength_b', DEFAULT_MAX_STRENGTH['B'])
@@ -387,6 +566,11 @@ class MainWindow(QMainWindow):
                     CURRENT_LANG = config.get('language', "zh_CN")
         except Exception as e:
             logging.error(f"加载配置文件失败: {str(e)}")
+            # 使用默认值
+            SOCKET_URI = ""
+            self.max_strength = DEFAULT_MAX_STRENGTH.copy()
+            DARK_MODE = False
+            CURRENT_LANG = "zh_CN"
 
     def save_config(self):
         global DARK_MODE, CURRENT_LANG
@@ -399,7 +583,15 @@ class MainWindow(QMainWindow):
         }
         try:
             with open(CONFIG_FILE, 'w') as f:
-                json.dump(config, f)
+                # 使用Python的repr来确保布尔值正确写入
+                config_str = "{\n"
+                config_str += f'    "socket_uri": "{config["socket_uri"]}",\n'
+                config_str += f'    "max_strength_a": {config["max_strength_a"]},\n'
+                config_str += f'    "max_strength_b": {config["max_strength_b"]},\n'
+                config_str += f'    "dark_mode": {str(config["dark_mode"])},\n'
+                config_str += f'    "language": "{config["language"]}"\n'
+                config_str += "}"
+                f.write(config_str)
             return True
         except Exception as e:
             logging.error(f"保存配置文件失败: {str(e)}")
@@ -409,6 +601,27 @@ class MainWindow(QMainWindow):
         global DARK_MODE
         style = DARK_STYLE if DARK_MODE else LIGHT_STYLE
         self.setStyleSheet(style)
+        
+        # 更新波形显示主题
+        if hasattr(self, 'plot_widget_a') and hasattr(self, 'plot_widget_b'):
+            for plot_widget in [self.plot_widget_a, self.plot_widget_b]:
+                if DARK_MODE:
+                    plot_widget.setBackground('#2b2b2b')
+                    plot_widget.getAxis('bottom').setPen(pg.mkPen(color='#ffffff'))
+                    plot_widget.getAxis('left').setPen(pg.mkPen(color='#ffffff'))
+                    plot_widget.getAxis('bottom').setTextPen(pg.mkPen(color='#ffffff'))
+                    plot_widget.getAxis('left').setTextPen(pg.mkPen(color='#ffffff'))
+                else:
+                    plot_widget.setBackground('w')
+                    plot_widget.getAxis('bottom').setPen(pg.mkPen(color='k'))
+                    plot_widget.getAxis('left').setPen(pg.mkPen(color='k'))
+                    plot_widget.getAxis('bottom').setTextPen(pg.mkPen(color='k'))
+                    plot_widget.getAxis('left').setTextPen(pg.mkPen(color='k'))
+        
+        # 更新日志窗口主题
+        if self.log_window:
+            self.log_window.apply_theme()
+            
         # 更新主题切换按钮文本
         if hasattr(self, 'theme_btn'):
             self.theme_btn.setText(translate("theme.toggle"))
@@ -499,8 +712,11 @@ class MainWindow(QMainWindow):
         self.title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         self.theme_btn = QPushButton(translate("theme.toggle"))
         self.theme_btn.clicked.connect(self.toggle_theme)
+        self.log_window_btn = QPushButton(translate("log.show"))
+        self.log_window_btn.clicked.connect(self.toggle_log_window)
         top_layout.addWidget(self.title_label)
         top_layout.addStretch()
+        top_layout.addWidget(self.log_window_btn)
         top_layout.addWidget(self.theme_btn)
         main_layout.addLayout(top_layout)
         
@@ -537,6 +753,7 @@ class MainWindow(QMainWindow):
         device_layout.addWidget(self.connect_btn)
         device_layout.addWidget(self.device_label)
         self.device_group.setLayout(device_layout)
+        main_layout.addWidget(self.device_group)
         
         # 服务器配置组
         self.server_group = QGroupBox(translate("server.config"))
@@ -545,10 +762,14 @@ class MainWindow(QMainWindow):
         self.server_input = QLineEdit()
         self.server_input.setText(SOCKET_URI)
         self.save_server_btn = QPushButton(translate("server.save"))
+        self.connect_server_btn = QPushButton("连接服务器")
+        self.connect_server_btn.setEnabled(False)  # 初始禁用
         server_layout.addWidget(self.server_address_label)
         server_layout.addWidget(self.server_input)
         server_layout.addWidget(self.save_server_btn)
+        server_layout.addWidget(self.connect_server_btn)
         self.server_group.setLayout(server_layout)
+        main_layout.addWidget(self.server_group)
         
         # 配置区域
         self.config_group = QGroupBox(translate("strength.config"))
@@ -570,6 +791,7 @@ class MainWindow(QMainWindow):
         config_layout.addWidget(self.b_max_input)
         config_layout.addWidget(self.save_btn)
         self.config_group.setLayout(config_layout)
+        main_layout.addWidget(self.config_group)
         
         # 状态显示
         self.status_group = QGroupBox(translate("status.realtime"))
@@ -583,6 +805,7 @@ class MainWindow(QMainWindow):
         status_layout.addWidget(self.battery_label)
         status_layout.addWidget(self.rssi_label)
         self.status_group.setLayout(status_layout)
+        main_layout.addWidget(self.status_group)
         
         # 控制按钮
         self.control_group = QGroupBox(translate("control.manual"))
@@ -596,28 +819,124 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(self.clear_a_btn)
         control_layout.addWidget(self.clear_b_btn)
         self.control_group.setLayout(control_layout)
-        
-        # 日志区域
-        self.log_group = QGroupBox(translate("log.title"))
-        log_layout = QVBoxLayout()
-        self.log_area = QTextEdit()
-        self.log_area.setReadOnly(True)
-        log_layout.addWidget(self.log_area)
-        self.log_group.setLayout(log_layout)
-        
-        # 布局组装
-        main_layout.addWidget(self.device_group)
-        main_layout.addWidget(self.server_group)
-        main_layout.addWidget(self.config_group)
-        main_layout.addWidget(self.status_group)
         main_layout.addWidget(self.control_group)
-        main_layout.addWidget(self.log_group, 1)
+        
+        # 波形显示区域
+        wave_layout = QHBoxLayout()
+        
+        # A通道波形显示
+        self.plot_widget_a = pg.PlotWidget()
+        self.plot_widget_a.setBackground('w')
+        self.plot_widget_a.setTitle("A通道实时波形")
+        self.plot_widget_a.setLabel('left', '强度')
+        self.plot_widget_a.setLabel('bottom', '时间')
+        self.plot_widget_a.showGrid(x=True, y=True)
+        self.plot_widget_a.setMouseEnabled(x=False, y=False)
+        self.plot_widget_a.setMenuEnabled(False)
+        view_box_a = self.plot_widget_a.getViewBox()
+        view_box_a.setMouseMode(pg.ViewBox.RectMode)
+        view_box_a.setMouseEnabled(x=False, y=False)
+        view_box_a.enableAutoRange(enable=False)
+        
+        # B通道波形显示
+        self.plot_widget_b = pg.PlotWidget()
+        self.plot_widget_b.setBackground('w')
+        self.plot_widget_b.setTitle("B通道实时波形")
+        self.plot_widget_b.setLabel('left', '强度')
+        self.plot_widget_b.setLabel('bottom', '时间')
+        self.plot_widget_b.showGrid(x=True, y=True)
+        self.plot_widget_b.setMouseEnabled(x=False, y=False)
+        self.plot_widget_b.setMenuEnabled(False)
+        view_box_b = self.plot_widget_b.getViewBox()
+        view_box_b.setMouseMode(pg.ViewBox.RectMode)
+        view_box_b.setMouseEnabled(x=False, y=False)
+        view_box_b.enableAutoRange(enable=False)
+        
+        # 保存初始显示范围
+        self.expected_y_range = (0, max(self.max_strength['A'], self.max_strength['B']))
+        self.expected_x_range = (-100, 0)  # 显示最近100个数据点
+        self.plot_widget_a.setYRange(*self.expected_y_range)
+        self.plot_widget_a.setXRange(*self.expected_x_range)
+        self.plot_widget_b.setYRange(*self.expected_y_range)
+        self.plot_widget_b.setXRange(*self.expected_x_range)
+        
+        # 创建两条曲线
+        self.curve_a = self.plot_widget_a.plot(pen=pg.mkPen(color='r', width=2), name='A通道')
+        self.curve_b = self.plot_widget_b.plot(pen=pg.mkPen(color='b', width=2), name='B通道')
+        
+        # 添加到布局
+        wave_layout.addWidget(self.plot_widget_a)
+        wave_layout.addWidget(self.plot_widget_b)
+        main_layout.addLayout(wave_layout, 1)  # 1表示拉伸因子
+        
+        # 创建范围监控定时器
+        self.range_monitor = pg.QtCore.QTimer()
+        self.range_monitor.timeout.connect(self.check_plot_range)
+        self.range_monitor.start(50)  # 每50ms检查一次
+        
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
+
+    def check_plot_range(self):
+        """检查并恢复波形显示范围"""
+        # 检查A通道波形范围
+        view_range_a = self.plot_widget_a.viewRange()
+        current_y_range_a = view_range_a[1]
+        current_x_range_a = view_range_a[0]
         
+        # 检查B通道波形范围
+        view_range_b = self.plot_widget_b.viewRange()
+        current_y_range_b = view_range_b[1]
+        current_x_range_b = view_range_b[0]
+        
+        # 如果当前范围与期望范围不同，立即恢复
+        if current_y_range_a != self.expected_y_range:
+            self.plot_widget_a.setYRange(*self.expected_y_range, padding=0)
+        if current_x_range_a != self.expected_x_range:
+            self.plot_widget_a.setXRange(*self.expected_x_range, padding=0)
+            
+        if current_y_range_b != self.expected_y_range:
+            self.plot_widget_b.setYRange(*self.expected_y_range, padding=0)
+        if current_x_range_b != self.expected_x_range:
+            self.plot_widget_b.setXRange(*self.expected_x_range, padding=0)
+            
+        # 确保鼠标交互被禁用
+        for plot_widget in [self.plot_widget_a, self.plot_widget_b]:
+            plot_widget.setMouseEnabled(x=False, y=False)
+            view_box = plot_widget.getViewBox()
+            view_box.setMouseMode(pg.ViewBox.RectMode)
+            view_box.setMouseEnabled(x=False, y=False)
+
+    def update_plot(self):
+        # 更新波形显示
+        if self.wave_queues['A']:
+            self.curve_a.setData(list(self.wave_queues['A']))
+        if self.wave_queues['B']:
+            self.curve_b.setData(list(self.wave_queues['B']))
+
+    def toggle_log_window(self):
+        if self.log_window is None:
+            self.log_window = LogWindow(self)
+        
+        if self.log_window.isVisible():
+            self.log_window.hide()
+            self.log_window_btn.setText(translate("log.show"))
+        else:
+            self.log_window.show()
+            self.log_window_btn.setText(translate("log.hide"))
+
+    def on_log_window_closed(self):
+        """当日志窗口被关闭时调用"""
+        self.log_window_btn.setText(translate("log.show"))
+
+    def log_output(self, message):
+        if self.log_window:
+            self.log_window.append_log(message)
+
     def setup_connections(self):
         self.scan_btn.clicked.connect(self.show_scanner)
         self.connect_btn.clicked.connect(self.on_connect_clicked)
+        self.connect_server_btn.clicked.connect(self.on_connect_server_clicked)
         self.signals.device_selected.connect(self.update_device_address)
         self.signals.device_id_updated.connect(self.update_device_id)
         self.signals.connection_changed.connect(self.update_ui_state)
@@ -633,19 +952,35 @@ class MainWindow(QMainWindow):
         
     @asyncSlot()
     async def show_scanner(self):
-        # 检查蓝牙是否可用
-        if not await check_bluetooth_available():
-            QMessageBox.critical(self, 
-                translate("dialog.error"),
-                translate("dialog.bluetooth_not_available"),
-                QMessageBox.Ok)
-            return
+        try:
+            # 检查蓝牙是否可用
+            if not await check_bluetooth_available():
+                QMessageBox.critical(self, 
+                    translate("dialog.error"),
+                    translate("dialog.bluetooth_not_available"),
+                    QMessageBox.Ok)
+                return
+                
+            scanner = DeviceScanner(self)
+            scanner.setStyleSheet(self.styleSheet())  # 应用相同的主题
+            scanner.device_list.itemDoubleClicked.connect(lambda: self.select_device(scanner))
             
-        scanner = DeviceScanner(self)
-        scanner.setStyleSheet(self.styleSheet())  # 应用相同的主题
-        scanner.device_list.itemDoubleClicked.connect(lambda: self.select_device(scanner))
-        scanner.exec()
-        
+            # 先显示窗口
+            scanner.show()
+            
+            # 直接调用扫描方法，而不是创建新的任务
+            await scanner.start_scan()
+            
+            # 等待窗口关闭
+            scanner.exec()
+            
+        except Exception as e:
+            logging.error(f"显示扫描窗口时发生错误: {str(e)}")
+            QMessageBox.critical(self,
+                translate("dialog.error"),
+                translate("dialog.scan_window_error", str(e)),
+                QMessageBox.Ok)
+
     def select_device(self, scanner):
         selected = scanner.device_list.currentItem().text()
         address = selected.split("|")[-1].strip()
@@ -700,11 +1035,30 @@ class MainWindow(QMainWindow):
             await self.get_device_id()
             asyncio.create_task(self.process_wave_queues())
             asyncio.create_task(self.monitor_connection())
-            asyncio.create_task(self.listen_websocket())
             self.signals.connection_changed.emit(True)
+            self.connect_server_btn.setEnabled(True)  # 启用服务器连接按钮
         except Exception as e:
             self.signals.log_message.emit(translate("status_updates.connection_failed", str(e)))
             self.signals.connection_changed.emit(False)
+            self.connect_server_btn.setEnabled(False)
+
+    @asyncSlot()
+    async def on_connect_server_clicked(self):
+        if not self.ble_client or not self.ble_client.is_connected:
+            self.signals.log_message.emit("请先确保蓝牙设备已连接")
+            return
+            
+        if not SOCKET_URI:
+            self.signals.log_message.emit(translate("status_updates.server_address_empty"))
+            return
+            
+        try:
+            asyncio.create_task(self.listen_websocket())
+            self.connect_server_btn.setEnabled(False)
+            self.signals.log_message.emit("正在连接服务器...")
+        except Exception as e:
+            self.signals.log_message.emit(f"连接服务器失败: {str(e)}")
+            self.connect_server_btn.setEnabled(True)
 
     async def read_battery(self):
         try:
@@ -738,6 +1092,7 @@ class MainWindow(QMainWindow):
     def update_ui_state(self, connected):
         self.connect_btn.setEnabled(not connected)
         self.scan_btn.setEnabled(not connected)
+        self.connect_server_btn.setEnabled(connected)  # 只有在蓝牙连接成功时才启用
         status = translate("device.connected" if connected else "device.disconnected")
         self.device_label.setText(translate("device.status", status))
         # 更新实时状态
@@ -763,9 +1118,6 @@ class MainWindow(QMainWindow):
         self.wave_queues[channel].clear()
         self.signals.log_message.emit(translate("status_updates.queue_cleared", channel))
         
-    def log_output(self, message):
-        self.log_area.append(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
-
     async def send_ble_command(self, char_uuid, data):
         if self.ble_client and self.ble_client.is_connected:
             try:
@@ -812,27 +1164,48 @@ class MainWindow(QMainWindow):
                     await self.send_ble_command(char, data)
             await asyncio.sleep(0.025)
 
-    async def handle_strength_change(self, channel_num, mode, value):
-        ch = 'A' if channel_num == 1 else 'B'
+    async def send_websocket_message(self, message):
+        """发送消息到WebSocket服务器"""
         try:
-            current = self.current_strength[ch]
-            if mode == 0: new = current - value
-            elif mode == 1: new = current + value
-            elif mode == 2: new = value
-            else: return
-            
-            if new > self.max_strength[ch]:
-                self.signals.log_message.emit(translate("status_updates.channel_over_limit", ch, self.max_strength[ch]))
+            if not self.ws_client:
+                self.signals.log_message.emit("WebSocket未连接")
                 return
-                
-            new = max(0, min(new, self.max_strength[ch]))
-            self.current_strength[ch] = new
-            data = self.encode_pwm_ab2(self.current_strength['A'], self.current_strength['B'])
-            await self.send_ble_command(BLE_CHAR_PWM_AB2, data)
-            self.signals.status_update.emit(ch, str(new))
             
+            await self.ws_client.send(json.dumps(message))
+            self.signals.log_message.emit("消息已发送到服务器")
         except Exception as e:
-            self.signals.log_message.emit(translate("status_updates.strength_adjust_failed", str(e)))
+            self.signals.log_message.emit(f"发送消息到服务器失败: {str(e)}")
+            self.ws_client = None  # 连接可能已断开，重置连接
+
+    async def listen_websocket(self):
+        try:
+            if not SOCKET_URI:
+                self.signals.log_message.emit(translate("status_updates.server_address_empty"))
+                return
+            
+            async with websockets.connect(SOCKET_URI) as ws:
+                self.ws_client = ws  # 保存WebSocket连接
+                await ws.send(json.dumps({
+                    "type": "bind",
+                    "clientId": DEVICE_ID,
+                    "targetId": "",
+                    "message": "DGLAB"
+                }))
+                while True:
+                    try:
+                        message = await ws.recv()
+                        self.signals.log_message.emit(translate("status_updates.received_command", message[:50]))
+                        await self.handle_socket_message(message)
+                    except websockets.ConnectionClosed:
+                        self.signals.log_message.emit("WebSocket连接已关闭")
+                        break
+                    except Exception as e:
+                        self.signals.log_message.emit(f"处理WebSocket消息时出错: {str(e)}")
+                        break
+        except Exception as e:
+            self.signals.log_message.emit(translate("status_updates.network_error", str(e)))
+        finally:
+            self.ws_client = None  # 清除连接
 
     async def handle_socket_message(self, message):
         try:
@@ -853,6 +1226,8 @@ class MainWindow(QMainWindow):
                     x,y = self.v3_freq_to_v2(freq)
                     z = self.v3_intensity_to_v2_z(intensity)
                     self.wave_queues[channel].append((x,y,z))
+                    # 更新波形显示
+                    self.wave_queues[channel].append(intensity)
             elif cmd.startswith("clear-"):
                 channel = 'A' if cmd[6:] == '1' else 'B'
                 self.wave_queues[channel].clear()
@@ -882,6 +1257,9 @@ class MainWindow(QMainWindow):
             self.max_strength['A'] = a_value
             self.max_strength['B'] = b_value
             
+            # 更新波形显示的Y轴范围
+            self.check_plot_range()
+            
             if self.save_config():
                 self.signals.log_message.emit(translate("status_updates.strength_limit_updated", 
                     self.max_strength['A'], self.max_strength['B']))
@@ -900,28 +1278,44 @@ class MainWindow(QMainWindow):
             self.a_max_input.setText(str(self.max_strength['A']))
             self.b_max_input.setText(str(self.max_strength['B']))
 
-    async def listen_websocket(self):
-        try:
-            if not SOCKET_URI:
-                self.signals.log_message.emit(translate("status_updates.server_address_empty"))
-                return
-            
-            async with websockets.connect(SOCKET_URI) as ws:
-                await ws.send(json.dumps({
-                    "type": "bind",
-                    "clientId": DEVICE_ID,
-                    "targetId": "",
-                    "message": "DGLAB"
-                }))
-                while True:
-                    message = await ws.recv()
-                    self.signals.log_message.emit(translate("status_updates.received_command", message[:50]))
-                    await self.handle_socket_message(message)
-        except Exception as e:
-            self.signals.log_message.emit(translate("status_updates.network_error", str(e)))
-
     def send_strength_command(self, channel, mode, value):
         asyncio.create_task(self.handle_strength_change(channel, mode, value))
+
+    async def handle_strength_change(self, channel_num, mode, value):
+        ch = 'A' if channel_num == 1 else 'B'
+        try:
+            current = self.current_strength[ch]
+            if mode == 0: new = current - value
+            elif mode == 1: new = current + value
+            elif mode == 2: new = value
+            else: return
+            
+            if new > self.max_strength[ch]:
+                self.signals.log_message.emit(translate("status_updates.channel_over_limit", ch, self.max_strength[ch]))
+                return
+                
+            new = max(0, min(new, self.max_strength[ch]))
+            old_value = self.current_strength[ch]  # 保存旧值
+            self.current_strength[ch] = new
+            data = self.encode_pwm_ab2(self.current_strength['A'], self.current_strength['B'])
+            await self.send_ble_command(BLE_CHAR_PWM_AB2, data)
+            self.signals.status_update.emit(ch, str(new))
+            
+            # 更新波形显示
+            self.wave_queues[ch].append(new)
+            
+            # 只有当值真正改变时才发送到服务器
+            if new != old_value:
+                message = {
+                    "type": "msg",
+                    "clientId": DEVICE_ID,
+                    "targetId": "",
+                    "message": f"strength-{channel_num}+2+{new}"  # 使用mode 2表示直接设置强度值
+                }
+                await self.send_websocket_message(message)
+            
+        except Exception as e:
+            self.signals.log_message.emit(translate("status_updates.strength_adjust_failed", str(e)))
 
     def on_language_changed(self, index):
         """语言选择改变时的处理函数"""
