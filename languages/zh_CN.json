@@ -55,15 +55,23 @@
     },
     
     "log": {
-        "title": "运行日志"
+        "title": "运行日志",
+        "show": "显示日志",
+        "hide": "隐藏日志",
+        "clear": "清除日志"
     },
     
     "dialog": {
         "choose_device": "选择蓝牙设备",
         "refresh_devices": "刷新设备列表",
+        "cancel": "取消",
         "error": "错误提示",
         "bluetooth_not_available": "未检测到蓝牙功能，请检查设备蓝牙是否开启并正常工作",
         "scan_failed": "扫描设备失败：{0}",
+        "scan_window_error": "打开扫描窗口时发生错误：{0}",
+        "scan_complete": "扫描完成",
+        "no_devices_found": "未找到设备",
+        "scanning": "正在扫描设备...",
         "invalid_url": "无效的WebSocket地址，请使用正确的格式（例如：ws://example.com）",
         "save_config_failed": "保存配置失败，请检查文件权限或磁盘空间"
     },
@@ -88,10 +96,16 @@
         "message_process_error": "❌ 消息处理错误: {0}",
         "strength_limit_updated": "✅ 强度上限更新并保存: A={0} B={1}",
         "strength_limit_update_failed": "❌ 强度上限更新失败: A={0} B={1}",
+        "strength_limit_range_error": "❌ 强度上限必须在0-200之间",
         "invalid_number": "❌ 请输入有效数字",
         "server_address_empty": "❌ 请先设置服务器地址",
         "network_error": "🔴 网络错误: {0}",
         "received_command": "📥 收到指令: {0}...",
-        "theme_changed": "✨ 已切换到{0}模式"
+        "theme_changed": "✨ 已切换到{0}模式",
+        "websocket_not_connected": "WebSocket未连接",
+        "websocket_message_sent": "消息已发送到服务器",
+        "websocket_send_failed": "发送消息到服务器失败: {0}",
+        "websocket_closed": "WebSocket连接已关闭",
+        "websocket_error": "处理WebSocket消息时出错: {0}"
     }
 } 
