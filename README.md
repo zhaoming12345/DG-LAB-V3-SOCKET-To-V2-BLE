@@ -32,6 +32,7 @@ pip install pyside6 qasync websockets bleak pyqtgraph
 
  - [x] 修复回调数据（有待验证）
  - [ ] 修复重新扫描设备时的错误
+ - [ ] 手动控制：测试增加强度后等待10秒自动清零强度
 
 ## 辅助工具：
 
