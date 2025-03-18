@@ -48,7 +48,7 @@ pip install pyside6 qasync websockets bleak
 
 [郊狼官方V3蓝牙协议支持文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/coyote/v3/README_V3.md)
 
-[郊狼官方SOCKETV3控制协议支持文档](socket/README.mdhttps://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/socket/README.md)
+[郊狼官方SOCKETV3控制协议支持文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/socket/README.md)
 
 ## 其他杂项：
 
