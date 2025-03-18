@@ -1,0 +1,97 @@
+{
+    "language_name": "English",
+    "app_title": "DG-LAB Controller",
+    "main_title": "DG-LAB V3 SOCKET To V2 BLE",
+    
+    "theme": {
+        "toggle": "Toggle Theme Mode",
+        "light": "Light",
+        "dark": "Dark"
+    },
+    
+    "language": {
+        "setting": "Language Settings"
+    },
+    
+    "device": {
+        "management": "Device Management",
+        "scan": "Scan Devices",
+        "connect": "Connect Device",
+        "status": "Current Device: {0}",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "unknown": "Unknown Device"
+    },
+    
+    "server": {
+        "config": "Server Configuration",
+        "address": "Server Address:",
+        "save": "Save Server Address"
+    },
+    
+    "strength": {
+        "config": "Strength Limit Configuration",
+        "channel_a_limit": "Channel A Limit:",
+        "channel_b_limit": "Channel B Limit:",
+        "save": "Save Configuration"
+    },
+    
+    "status": {
+        "realtime": "Real-time Status",
+        "channel_a": "Channel A Strength: {0}/{1}",
+        "channel_b": "Channel B Strength: {0}/{1}",
+        "battery": "Battery: {0}%",
+        "signal_strength": "Signal: {0}dBm",
+        "signal_unknown": "Signal: --dBm",
+        "language_changed": "🌐 Switched to {0}"
+    },
+    
+    "control": {
+        "manual": "Manual Control",
+        "test_a": "Test Channel A +10",
+        "test_b": "Test Channel B +10",
+        "clear_a": "Clear Queue A",
+        "clear_b": "Clear Queue B"
+    },
+    
+    "log": {
+        "title": "Operation Log"
+    },
+    
+    "dialog": {
+        "choose_device": "Select Bluetooth Device",
+        "refresh_devices": "Refresh Device List",
+        "error": "Error",
+        "bluetooth_not_available": "Bluetooth functionality not detected. Please ensure your device has Bluetooth enabled and working properly.",
+        "scan_failed": "Failed to scan devices: {0}",
+        "invalid_url": "Invalid WebSocket URL. Please use the correct format (e.g., ws://example.com)",
+        "save_config_failed": "Failed to save configuration. Please check file permissions or disk space"
+    },
+    
+    "status_updates": {
+        "server_updated": "✅ Server address updated and saved: {0}",
+        "server_update_failed": "❌ Failed to update server address: {0}",
+        "device_selected": "✅ Device selected: {0}",
+        "device_id_updated": "Device ID updated: {0}",
+        "please_select_device": "❌ Please select a device first",
+        "bluetooth_connected": "🔵 Bluetooth connected successfully",
+        "connection_failed": "🔴 Connection failed: {0}",
+        "battery_read_failed": "⚠️ Failed to read battery: {0}",
+        "get_device_id_success": "✅ Got device ID successfully: {0}",
+        "get_device_id_failed": "❌ Failed to get device ID: {0}",
+        "invalid_status_value": "❌ Invalid status update value",
+        "queue_cleared": "♻️ Cleared channel {0} queue",
+        "command_send_success": "Command sent successfully: {0}",
+        "command_send_failed": "Failed to send command: {0}",
+        "channel_over_limit": "⚠️ Channel {0} exceeds limit {1}",
+        "strength_adjust_failed": "❌ Failed to adjust strength: {0}",
+        "message_process_error": "❌ Message processing error: {0}",
+        "strength_limit_updated": "✅ Strength limits updated and saved: A={0} B={1}",
+        "strength_limit_update_failed": "❌ Failed to update strength limits: A={0} B={1}",
+        "invalid_number": "❌ Please enter valid numbers",
+        "server_address_empty": "❌ Please set server address first",
+        "network_error": "🔴 Network error: {0}",
+        "received_command": "📥 Received command: {0}...",
+        "theme_changed": "✨ Switched to {0} mode"
+    }
+} 
