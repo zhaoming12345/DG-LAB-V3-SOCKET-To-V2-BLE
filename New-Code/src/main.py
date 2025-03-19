@@ -1,6 +1,6 @@
 import sys
 import asyncio
-import logging  # 添加日志模块导入
+import logging  # 导入日志模块
 from PySide6.QtWidgets import QApplication
 from qasync import QEventLoop
 from ui.main_window import MainWindow
@@ -11,15 +11,6 @@ def main():
     # Windows事件循环策略设置
     if sys.platform == 'win32':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    
-    # 设置日志 - 移除这个重复的配置，使用setup_logging()
-    # logging.basicConfig(
-    #     level=logging.INFO,
-    #     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    #     handlers=[
-    #         logging.StreamHandler()  # 添加控制台输出处理器
-    #     ]
-    # )
     
     # 初始化应用
     app = QApplication(sys.argv)
