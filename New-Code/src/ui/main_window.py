@@ -4,11 +4,11 @@ from PySide6.QtWidgets import (
     QMessageBox, QComboBox
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIntValidator  # 添加QIntValidator导入
+from PySide6.QtGui import QIntValidator
 import pyqtgraph as pg
 from collections import deque
 from qasync import asyncSlot
-import logging  # 添加日志模块导入
+import logging  # 日志模块导入
 
 from utils.signals import DeviceSignals
 from utils.i18n import i18n
@@ -58,7 +58,6 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(5)
         main_layout.setContentsMargins(5, 5, 5, 5)
         
-        # 添加标题标签 - 修正位置为左上角
         title_layout = QHBoxLayout()
         title_label = QLabel(i18n.translate("main_title"))
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
@@ -85,7 +84,7 @@ class MainWindow(QMainWindow):
         self.lang_group.setLayout(lang_layout)
         main_layout.addWidget(self.lang_group)
         
-        # 设备管理 (修正布局顺序)
+        # 设备管理
         self.device_group = QGroupBox(str(i18n.translate("device.management")))
         device_layout = QVBoxLayout()
         
