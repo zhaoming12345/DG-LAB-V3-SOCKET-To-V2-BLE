@@ -4,14 +4,12 @@ import logging
 
 class I18n:
     def __init__(self):
-        # 修正为正确的相对路径计算
         current_dir = os.path.dirname(__file__)
         self.lang_path = os.path.abspath(os.path.join(current_dir, '..', 'languages'))
         os.makedirs(self.lang_path, exist_ok=True)
         self.translations = {}
         self.current_lang = "zh_CN"  # 默认使用中文
         
-        # 添加路径验证日志
         logging.info(f"Language path initialized at: {self.lang_path}")
         if not os.path.exists(self.lang_path):
             logging.error(f"Language directory not found: {self.lang_path}")
@@ -79,4 +77,4 @@ class I18n:
             return key
 
 # 创建全局实例
-i18n = I18n()  # 修正大小写保持一致
+i18n = I18n()
