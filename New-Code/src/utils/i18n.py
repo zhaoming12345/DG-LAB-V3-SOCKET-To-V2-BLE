@@ -48,12 +48,13 @@ class I18n:
             logging.error(f"加载语言包失败: {str(e)}")
             return False
             
-    def translate(self, key: str, *args) -> str:
+    def translate(self, key: str, *args, **kwargs) -> str:
         """翻译指定的文本键值
         
         Args:
             key: 翻译键值，如 "device.status"
-            *args: 格式化参数
+            *args: 位置格式化参数
+            **kwargs: 命名格式化参数，用于支持命名占位符
             
         Returns:
             翻译后的文本，如果找不到对应的键值则返回原键值
@@ -69,8 +70,13 @@ class I18n:
             # 确保value是字符串类型
             value = str(value)
                     
-            if args:
-                return value.format(*args)
+            if args or kwargs:
+                if args and isinstance(args[0], dict) and len(args) == 1:
+                    # 处理字典参数 - 用于支持 {channel} 形式的占位符
+                    return value.format(**args[0])
+                else:
+                    # 处理位置参数和命名参数
+                    return value.format(*args, **kwargs)
             return value
         except Exception as e:
             logging.debug(f"翻译键值失败 '{key}': {str(e)}")

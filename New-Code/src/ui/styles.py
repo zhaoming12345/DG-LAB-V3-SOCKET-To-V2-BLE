@@ -50,6 +50,14 @@ def get_style(accent_color, background_image=None):
             border: 1px solid {accent_color};
         }}
         
+        /* 波形图控件样式 - 确保完全透明 */
+        PyQtGraph {{
+            background-color: transparent;
+        }}
+        QGraphicsView {{
+            background-color: transparent;
+        }}
+        
         QMainWindow, QDialog {{
             background-color: {base_bg};
             color: {text_color};
@@ -79,6 +87,12 @@ def get_style(accent_color, background_image=None):
         
         QPushButton:hover {{
             background-color: {hover_bg};
+        }}
+        
+        /* 按钮禁用状态样式，与旧版保持一致 */
+        QPushButton:disabled {{
+            background-color: {disabled_bg};
+            color: {disabled_text};
         }}
         
         QLineEdit, QTextEdit, QComboBox {{

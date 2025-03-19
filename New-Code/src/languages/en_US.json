@@ -23,7 +23,11 @@
         "status": "Device Status: {0}",
         "connected": "Connected",
         "disconnected": "Disconnected",
-        "unknown": "Unknown Device"
+        "unknown": "Unknown Device",
+        "scanning": "Scanning for devices...",
+        "scan_complete": "Scan complete",
+        "no_devices": "No devices found",
+        "scan_failed": "Scan failed"
     },
 
     "server": {
@@ -137,7 +141,9 @@
     },
     "error": {
         "invalid_strength_range": "Strength value must be between 0-200",
-        "invalid_strength_value": "Please enter a valid strength value"
+        "invalid_strength_value": "Please enter a valid strength value",
+        "bluetooth_not_available": "Bluetooth Not Available",
+        "bluetooth_not_available_message": "Your system does not support Bluetooth or Bluetooth is disabled.\nPlease check your system settings and ensure Bluetooth is enabled."
     },
     "theme": {
         "toggle": "Toggle Theme"

@@ -3,12 +3,13 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QGroupBox,
     QMessageBox, QComboBox
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIntValidator
 import pyqtgraph as pg
 from collections import deque
 from qasync import asyncSlot
 import logging  # 日志模块导入
+import re  # 添加正则表达式模块用于URL验证
 
 from utils.signals import DeviceSignals
 from utils.i18n import i18n
@@ -32,14 +33,23 @@ class MainWindow(QMainWindow):
         self.setup_connections()
         self.setup_managers()
         self.apply_theme()
+        # 初始化测试数据以确保波形图显示正常
+        self.init_test_data()
+        # 不在初始化中直接调用异步方法
+        # 改为使用QTimer在初始化完成后调用
+        QTimer.singleShot(0, self.initialize_bluetooth_check)
         
     def init_attributes(self):
         """初始化属性"""
         self.signals = DeviceSignals()
+        # 修改波形队列为存储二维坐标点的队列，每个点是(x,y)格式
+        self.wave_data = {'A': [], 'B': []}
+        self.wave_indices = {'A': [], 'B': []}
         self.wave_queues = {'A': deque(maxlen=100), 'B': deque(maxlen=100)}
         self.current_strength = {'A': 0, 'B': 0}
         self.max_strength = settings.max_strength
         self.log_window = None
+        self.data_points = 0
         
     def setup_managers(self):
         """初始化管理器"""
@@ -55,21 +65,21 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setSpacing(5)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setSpacing(10)  # 使用旧版的间距
+        main_layout.setContentsMargins(10, 10, 10, 10)  # 使用旧版的边距
         
+        # 创建顶部标题栏 - 与旧版一致
         title_layout = QHBoxLayout()
         title_label = QLabel(i18n.translate("main_title"))
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 10px;")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 15px;")  # 使用旧版字体样式
         title_layout.addWidget(title_label)
-        title_layout.addStretch()  # 添加弹性空间，使标题靠左
+        title_layout.addStretch()
         
-        # 顶部工具栏布局 - 放在同一行
+        # 顶部工具栏按钮 - 与旧版按钮大小和位置一致
         self.log_btn = QPushButton(i18n.translate("log.show"))
         self.theme_btn = QPushButton(i18n.translate("personalization.button"))
-        # 设置按钮固定宽度，使其大小一致
-        self.log_btn.setFixedWidth(120)
-        self.theme_btn.setFixedWidth(120)
+        self.log_btn.setFixedWidth(150)  # 调整为与旧版一致的大小
+        self.theme_btn.setFixedWidth(150)  # 调整为与旧版一致的大小
         title_layout.addWidget(self.log_btn)
         title_layout.addWidget(self.theme_btn)
         
@@ -159,8 +169,8 @@ class MainWindow(QMainWindow):
         status_layout = QHBoxLayout()
         self.a_status = QLabel(i18n.translate("status.channel_a", 0, self.max_strength['A']))
         self.b_status = QLabel(i18n.translate("status.channel_b", 0, self.max_strength['B']))
-        # 修改初始化时的电池显示，避免显示0%
-        self.battery_status = QLabel(i18n.translate("status.signal_unknown").replace("信号强度", "电池"))
+        # 修改初始化时的电池显示，避免显示0%，并使用专门的翻译键
+        self.battery_status = QLabel(i18n.translate("status.battery", "--"))
         self.signal_status = QLabel(i18n.translate("status.signal_unknown"))
         status_layout.addWidget(self.a_status)
         status_layout.addWidget(self.b_status)
@@ -172,34 +182,61 @@ class MainWindow(QMainWindow):
         plots_layout = QHBoxLayout()
         
         # 通道A波形
-        self.plot_widget_a = pg.PlotWidget(title=i18n.translate("status.wave_title_a"))
-        self.plot_widget_a.setBackground('transparent')  # 修改为transparent
-        self.plot_widget_a.showGrid(x=True, y=True, alpha=0.3)
+        self.plot_widget_a = pg.PlotWidget()
+        self.plot_widget_a.setBackground('transparent')  # 使用'transparent'替代None
+        self.plot_widget_a.setTitle(i18n.translate("status.wave_title_a"))
         self.plot_widget_a.setLabel('left', i18n.translate("status.wave_y_label"))
         self.plot_widget_a.setLabel('bottom', i18n.translate("status.wave_x_label"))
-        # 设置Y轴范围为0到当前最大强度
-        self.plot_widget_a.setYRange(0, self.max_strength['A'])
-        # 禁用鼠标交互功能，使波形图表变为只读模式
+        self.plot_widget_a.showGrid(x=True, y=True, alpha=0.3)  # 设置网格透明度
         self.plot_widget_a.setMouseEnabled(x=False, y=False)
         self.plot_widget_a.setMenuEnabled(False)
-        self.plot_widget_a.getViewBox().setMouseMode(pg.ViewBox.PanMode)
-        self.plot_widget_a.getViewBox().setMouseEnabled(x=False, y=False)
-        self.curve_a = self.plot_widget_a.plot(pen=pg.mkPen(color='g', width=2))
+        view_box_a = self.plot_widget_a.getViewBox()
+        view_box_a.setMouseMode(pg.ViewBox.RectMode)
+        view_box_a.setMouseEnabled(x=False, y=False)
+        view_box_a.enableAutoRange(enable=False)
+        view_box_a.setBackgroundColor(None)  # 设置ViewBox背景为透明
+        
+        # 设置轴线颜色和透明度
+        axis_pen = pg.mkPen(color='#ffffff', width=1)
+        axis_text_pen = pg.mkPen(color='#ffffff')
+        self.plot_widget_a.getAxis('bottom').setPen(axis_pen)
+        self.plot_widget_a.getAxis('left').setPen(axis_pen)
+        self.plot_widget_a.getAxis('bottom').setTextPen(axis_text_pen)
+        self.plot_widget_a.getAxis('left').setTextPen(axis_text_pen)
         
         # 通道B波形
-        self.plot_widget_b = pg.PlotWidget(title=i18n.translate("status.wave_title_b"))
-        self.plot_widget_b.setBackground('transparent')  # 修改为transparent
-        self.plot_widget_b.showGrid(x=True, y=True, alpha=0.3)
+        self.plot_widget_b = pg.PlotWidget()
+        self.plot_widget_b.setBackground('transparent')  # 使用'transparent'替代None
+        self.plot_widget_b.setTitle(i18n.translate("status.wave_title_b"))
         self.plot_widget_b.setLabel('left', i18n.translate("status.wave_y_label"))
         self.plot_widget_b.setLabel('bottom', i18n.translate("status.wave_x_label"))
-        # 设置Y轴范围为0到当前最大强度
-        self.plot_widget_b.setYRange(0, self.max_strength['B'])
-        # 禁用鼠标交互功能，使波形图表变为只读模式
+        self.plot_widget_b.showGrid(x=True, y=True, alpha=0.3)  # 设置网格透明度
         self.plot_widget_b.setMouseEnabled(x=False, y=False)
         self.plot_widget_b.setMenuEnabled(False)
-        self.plot_widget_b.getViewBox().setMouseMode(pg.ViewBox.PanMode)
-        self.plot_widget_b.getViewBox().setMouseEnabled(x=False, y=False)
-        self.curve_b = self.plot_widget_b.plot(pen=pg.mkPen(color='r', width=2))
+        view_box_b = self.plot_widget_b.getViewBox()
+        view_box_b.setMouseMode(pg.ViewBox.RectMode)
+        view_box_b.setMouseEnabled(x=False, y=False)
+        view_box_b.enableAutoRange(enable=False)
+        view_box_b.setBackgroundColor(None)  # 设置ViewBox背景为透明
+        
+        # 设置轴线颜色和透明度
+        self.plot_widget_b.getAxis('bottom').setPen(axis_pen)
+        self.plot_widget_b.getAxis('left').setPen(axis_pen)
+        self.plot_widget_b.getAxis('bottom').setTextPen(axis_text_pen)
+        self.plot_widget_b.getAxis('left').setTextPen(axis_text_pen)
+        
+        # 保存初始显示范围
+        self.expected_y_range_a = (0, self.max_strength['A'])
+        self.expected_y_range_b = (0, self.max_strength['B'])
+        self.expected_x_range = (-100, 0)  # 显示最近100个数据点
+        self.plot_widget_a.setYRange(*self.expected_y_range_a)
+        self.plot_widget_a.setXRange(*self.expected_x_range)
+        self.plot_widget_b.setYRange(*self.expected_y_range_b)
+        self.plot_widget_b.setXRange(*self.expected_x_range)
+        
+        # 创建两条曲线
+        self.curve_a = self.plot_widget_a.plot(pen=pg.mkPen(color=(0, 255, 0, 200), width=2), name='A通道')  # 绿色，半透明
+        self.curve_b = self.plot_widget_b.plot(pen=pg.mkPen(color=(255, 0, 0, 200), width=2), name='B通道')  # 红色，半透明
         
         plots_layout.addWidget(self.plot_widget_a)
         plots_layout.addWidget(self.plot_widget_b)
@@ -222,12 +259,22 @@ class MainWindow(QMainWindow):
         self.wave_group.setLayout(wave_layout)
         main_layout.addWidget(self.wave_group)
     
-        # 删除重复的波形图表代码
-    
         # 设置波形更新定时器
         self.update_timer = pg.QtCore.QTimer()
         self.update_timer.timeout.connect(self.update_plot)
         self.update_timer.start(50)
+
+        # 创建范围监控定时器
+        self.range_monitor = pg.QtCore.QTimer()
+        self.range_monitor.timeout.connect(self.check_plot_range)
+        self.range_monitor.start(50)  # 每50ms检查一次
+
+        # 初始化时禁用连接服务器按钮和手动控制按钮
+        self.server_connect_btn.setEnabled(False)
+        self.test_a_btn.setEnabled(False)
+        self.test_b_btn.setEnabled(False)
+        self.clear_a_btn.setEnabled(False)
+        self.clear_b_btn.setEnabled(False)
 
     # 将这些方法移到类级别
     def update_language_list(self):
@@ -319,14 +366,24 @@ class MainWindow(QMainWindow):
         status_text = i18n.translate("device.connected" if connected else "device.disconnected")
         self.device_status.setText(i18n.translate("device.status", status_text))
         self.device_label.setText(i18n.translate("label.no_device"))
+        
+        # 根据连接状态启用/禁用按钮
+        self.scan_btn.setEnabled(not connected)
+        self.connect_btn.setEnabled(not connected)
+        self.server_connect_btn.setEnabled(connected)  # 只有连接了蓝牙设备才能连接服务器
+        
+        # 控制手动控制按钮的状态
+        self.test_a_btn.setEnabled(connected)
+        self.test_b_btn.setEnabled(connected)
+        self.clear_a_btn.setEnabled(connected)
+        self.clear_b_btn.setEnabled(connected)
+        
         if connected:
-            self.scan_btn.setEnabled(False)
             self.signals.log_message.emit(i18n.translate("status.connected"))
         else:
-            self.scan_btn.setEnabled(True)
             self.signals.log_message.emit(i18n.translate("status.disconnected"))
-            # 重置电池和信号显示
-            self.battery_status.setText(i18n.translate("status.signal_unknown").replace("信号强度", "电池"))
+            # 重置电池和信号显示 - 使用正确的翻译键
+            self.battery_status.setText(i18n.translate("status.battery", "--"))
             self.signal_status.setText(i18n.translate("status.signal_unknown"))
         
     def setup_connections(self):
@@ -374,9 +431,18 @@ class MainWindow(QMainWindow):
     def update_server_address(self):
         """更新服务器地址"""
         new_uri = self.server_input.text().strip()
+        
+        # 验证URL格式
+        if not is_valid_websocket_url(new_uri):
+            QMessageBox.warning(self,
+                i18n.translate("dialog.error"),
+                i18n.translate("dialog.invalid_url"),
+                QMessageBox.Ok)
+            return
+        
         settings.socket_uri = new_uri
         settings.save()
-        self.signals.log_message.emit(i18n.translate("status.server_updated"))
+        self.signals.log_message.emit(i18n.translate("status_updates.server_updated", new_uri))
         
     def toggle_log_window(self):
         """切换日志窗口显示状态"""
@@ -405,39 +471,54 @@ class MainWindow(QMainWindow):
             self.apply_theme()
             
     def apply_theme(self):
-        """应用主题"""
-        style = get_style(settings.accent_color, settings.background_image)
-        self.setStyleSheet(style)
+        """应用主题样式"""
+        # 获取当前设置
+        accent_color = settings.accent_color
+        background_image = settings.background_image
+        
+        # 应用样式表
+        style_sheet = get_style(accent_color, background_image)
+        self.setStyleSheet(style_sheet)
         
         # 更新波形图样式
-        if hasattr(self, 'plot_widget_a') and hasattr(self, 'plot_widget_b'):
-            # 设置波形图背景为透明
-            self.plot_widget_a.setBackground('transparent')  # 修改为transparent
-            self.plot_widget_b.setBackground('transparent')  # 修改为transparent
-            
-            # 设置网格线颜色
-            self.plot_widget_a.getAxis('left').setPen(pg.mkPen(color='#888888'))
-            self.plot_widget_a.getAxis('bottom').setPen(pg.mkPen(color='#888888'))
-            self.plot_widget_b.getAxis('left').setPen(pg.mkPen(color='#888888'))
-            self.plot_widget_b.getAxis('bottom').setPen(pg.mkPen(color='#888888'))
-            
-            # 设置标签颜色
-            self.plot_widget_a.getAxis('left').setTextPen(pg.mkPen(color='#cccccc'))
-            self.plot_widget_a.getAxis('bottom').setTextPen(pg.mkPen(color='#cccccc'))
-            self.plot_widget_b.getAxis('left').setTextPen(pg.mkPen(color='#cccccc'))
-            self.plot_widget_b.getAxis('bottom').setTextPen(pg.mkPen(color='#cccccc'))
-            
-            # 设置标题颜色
-            self.plot_widget_a.setTitle(i18n.translate("status.wave_title_a"), color='#cccccc')
-            self.plot_widget_b.setTitle(i18n.translate("status.wave_title_b"), color='#cccccc')
-
+        axis_pen = pg.mkPen(color='#ffffff', width=1)
+        axis_text_pen = pg.mkPen(color='#ffffff')
+        
+        for plot_widget in [self.plot_widget_a, self.plot_widget_b]:
+            # 设置背景为透明
+            plot_widget.setBackground('transparent')
+            # 设置轴线颜色和透明度
+            plot_widget.getAxis('bottom').setPen(axis_pen)
+            plot_widget.getAxis('left').setPen(axis_pen)
+            plot_widget.getAxis('bottom').setTextPen(axis_text_pen)
+            plot_widget.getAxis('left').setTextPen(axis_text_pen)
+            # 设置网格线
+            plot_widget.showGrid(x=True, y=True, alpha=0.3)
+        
+        # 设置A通道的波形颜色为绿色，与旧版一致
+        self.curve_a.setPen(pg.mkPen(color=(0, 255, 0, 200), width=2))
+        # 设置B通道的波形颜色为红色，与旧版一致
+        self.curve_b.setPen(pg.mkPen(color=(255, 0, 0, 200), width=2))
+        
+        # 如果日志窗口存在，也应用样式
+        if self.log_window:
+            self.log_window.setStyleSheet(style_sheet)
+        
     def update_plot(self):
         """更新波形图"""
-        if self.wave_queues['A']:
-            self.curve_a.setData(list(self.wave_queues['A']))
-        if self.wave_queues['B']:
-            self.curve_b.setData(list(self.wave_queues['B']))
-    
+        # 只有当队列中有数据时才更新曲线
+        for channel in ['A', 'B']:
+            if len(self.wave_queues[channel]) > 0:
+                # 创建x轴数据(索引列表)
+                x_data = list(range(-len(self.wave_queues[channel]), 0))
+                # 使用队列中的数据作为y轴数据
+                y_data = list(self.wave_queues[channel])
+                # 更新相应的曲线
+                if channel == 'A':
+                    self.curve_a.setData(x_data, y_data)
+                else:
+                    self.curve_b.setData(x_data, y_data)
+
     def update_status(self, channel, value):
         """更新通道状态
         
@@ -449,16 +530,28 @@ class MainWindow(QMainWindow):
             return
             
         # 更新当前强度值
-        self.current_strength[channel] = value
-        
-        # 更新状态标签
-        if channel == 'A':
-            self.a_status.setText(i18n.translate("status.channel_a", value, self.max_strength['A']))
-        else:
-            self.b_status.setText(i18n.translate("status.channel_b", value, self.max_strength['B']))
+        try:
+            value = int(value)
+            self.current_strength[channel] = value
             
-        # 更新波形数据
-        self.wave_queues[channel].append(value)
+            # 更新状态标签
+            if channel == 'A':
+                self.a_status.setText(i18n.translate("status.channel_a", value, self.max_strength['A']))
+            else:
+                self.b_status.setText(i18n.translate("status.channel_b", value, self.max_strength['B']))
+                
+            # 更新波形数据 - 只保存Y值，X值在绘图时生成
+            self.wave_queues[channel].append(value)
+            
+            # 记录数据点数量
+            self.data_points += 1
+            
+            # 每增加一个数据点就检查一次范围
+            if self.data_points % 5 == 0:  # 每5个点检查一次以减少CPU负担
+                self.check_plot_range()
+                
+        except (ValueError, TypeError) as e:
+            logging.error(f"更新状态时出错: {str(e)}")
 
     async def connect_server(self):
         """连接服务器"""
@@ -477,9 +570,7 @@ class MainWindow(QMainWindow):
         """
         # 检查设备是否已连接
         if not self.ble_manager or not self.ble_manager.is_connected:
-            QMessageBox.warning(self, i18n.translate("dialog.error"), 
-                           i18n.translate("status_updates.please_select_device"))
-            return
+            return  # 如果未连接设备，直接返回，按钮状态已经由on_connection_changed控制
             
         if channel not in ['A', 'B']:
             return
@@ -490,31 +581,46 @@ class MainWindow(QMainWindow):
         # 清空当前队列
         self.wave_queues[channel].clear()
         
-        # 生成测试波形数据
-        for i in range(0, max_val + 1, 5):
-            self.current_strength[channel] = i
-            self.wave_queues[channel].append(i)
+        # 生成测试波形数据 - 使用正弦波形更好地测试显示效果
+        import math
+        steps = 50  # 测试使用50个点
+        for i in range(steps):
+            # 生成0到最大值之间的正弦波形
+            value = int(max_val * 0.5 * (1 + math.sin(i * 2 * math.pi / steps)))
+            self.current_strength[channel] = value
+            self.wave_queues[channel].append(value)
             
             # 更新状态标签
             if channel == 'A':
-                self.a_status.setText(str(i18n.translate("status.channel_a", i, max_val)))
+                self.a_status.setText(str(i18n.translate("status.channel_a", value, max_val)))
             else:
-                self.b_status.setText(str(i18n.translate("status.channel_b", i, max_val)))
+                self.b_status.setText(str(i18n.translate("status.channel_b", value, max_val)))
         
-        # 记录日志 - 修复参数不匹配问题
+        # 记录日志
         self.signals.log_message.emit(str(i18n.translate("status_updates.channel_tested", {"channel": channel})))
 
     def clear_channel(self, channel):
         """清空指定通道"""
         # 检查设备是否已连接
         if not self.ble_manager or not self.ble_manager.is_connected:
-            QMessageBox.warning(self, i18n.translate("dialog.error"), 
-                           i18n.translate("status_updates.please_select_device"))
-            return
+            return  # 如果未连接设备，直接返回，按钮状态已经由on_connection_changed控制
             
         if channel in self.wave_queues:
             self.wave_queues[channel].clear()
             self.current_strength[channel] = 0
+            
+            # 更新状态标签
+            if channel == 'A':
+                self.a_status.setText(str(i18n.translate("status.channel_a", 0, self.max_strength['A'])))
+            else:
+                self.b_status.setText(str(i18n.translate("status.channel_b", 0, self.max_strength['B'])))
+                
+            # 重置波形图
+            if channel == 'A':
+                self.curve_a.setData([], [])
+            else:
+                self.curve_b.setData([], [])
+                
             self.signals.log_message.emit(str(i18n.translate("status_updates.queue_cleared", {"channel": channel})))
 
     def update_battery(self, percentage):
@@ -566,7 +672,9 @@ class MainWindow(QMainWindow):
                 self.b_status.setText(i18n.translate("status.channel_b", 
                                 self.current_strength['B'], self.max_strength['B']))
                 
-                # 更新波形图Y轴范围
+                # 更新波形图Y轴范围 - 每个通道使用各自的最大值
+                self.expected_y_range_a = (0, self.max_strength['A'])
+                self.expected_y_range_b = (0, self.max_strength['B'])
                 self.plot_widget_a.setYRange(0, self.max_strength['A'])
                 self.plot_widget_b.setYRange(0, self.max_strength['B'])
                 
@@ -577,3 +685,92 @@ class MainWindow(QMainWindow):
         except ValueError:
             QMessageBox.warning(self, i18n.translate("dialog.error"), 
                            i18n.translate("error.invalid_strength_value"))
+
+    @asyncSlot()
+    async def initialize_bluetooth_check(self):
+        """初始化完成后检查蓝牙功能"""
+        await self.check_bluetooth_available()
+
+    async def check_bluetooth_available(self):
+        """检查蓝牙功能是否可用"""
+        if not await self.ble_manager.check_bluetooth_available():
+            from PySide6.QtWidgets import QMessageBox
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle(i18n.translate("error.bluetooth_not_available"))
+            msg.setText(i18n.translate("error.bluetooth_not_available_message"))
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+            # 禁用相关按钮
+            self.connect_btn.setEnabled(False)
+            self.scan_btn.setEnabled(False)
+
+    def check_plot_range(self):
+        """检查并维护波形图的显示范围
+        
+        确保波形图的显示范围保持在预期的范围内，包括：
+        1. Y轴范围：从0到各自通道的最大强度值
+        2. X轴范围：显示最近100个数据点
+        """
+        try:
+            # 更新Y轴范围 - 分别使用各自通道的最大值
+            if self.expected_y_range_a[1] != self.max_strength['A']:
+                self.expected_y_range_a = (0, self.max_strength['A'])
+                self.plot_widget_a.setYRange(0, self.max_strength['A'])
+                
+            if self.expected_y_range_b[1] != self.max_strength['B']:
+                self.expected_y_range_b = (0, self.max_strength['B'])
+                self.plot_widget_b.setYRange(0, self.max_strength['B'])
+            
+            # 检查并重置当前范围 - 防止用户意外修改显示范围
+            # A通道波形图范围检查
+            y_range = self.plot_widget_a.getViewBox().viewRange()[1]
+            if abs(y_range[0] - self.expected_y_range_a[0]) > 5 or abs(y_range[1] - self.expected_y_range_a[1]) > 5:
+                self.plot_widget_a.setYRange(*self.expected_y_range_a)
+                
+            x_range = self.plot_widget_a.getViewBox().viewRange()[0]
+            if abs(x_range[0] - self.expected_x_range[0]) > 5 or abs(x_range[1] - self.expected_x_range[1]) > 5:
+                self.plot_widget_a.setXRange(*self.expected_x_range)
+                
+            # B通道波形图范围检查
+            y_range = self.plot_widget_b.getViewBox().viewRange()[1]
+            if abs(y_range[0] - self.expected_y_range_b[0]) > 5 or abs(y_range[1] - self.expected_y_range_b[1]) > 5:
+                self.plot_widget_b.setYRange(*self.expected_y_range_b)
+                
+            x_range = self.plot_widget_b.getViewBox().viewRange()[0]
+            if abs(x_range[0] - self.expected_x_range[0]) > 5 or abs(x_range[1] - self.expected_x_range[1]) > 5:
+                self.plot_widget_b.setXRange(*self.expected_x_range)
+                    
+        except Exception as e:
+            logging.error(f"检查波形范围时发生错误: {str(e)}")
+
+    def init_test_data(self):
+        """初始化波形图显示，不添加测试数据"""
+        # 将波形队列清空
+        for channel in ['A', 'B']:
+            self.wave_queues[channel].clear()
+        
+        # 设置波形曲线为空数据
+        self.curve_a.setData([], [])
+        self.curve_b.setData([], [])
+        
+        # 确保Y轴和X轴范围设置正确
+        self.plot_widget_a.setYRange(0, self.max_strength['A'])
+        self.plot_widget_a.setXRange(*self.expected_x_range)
+        self.plot_widget_b.setYRange(0, self.max_strength['B'])
+        self.plot_widget_b.setXRange(*self.expected_x_range)
+
+def is_valid_websocket_url(url):
+    """验证WebSocket URL是否有效
+    
+    使用正则表达式检查URL格式是否符合WebSocket协议要求。
+    
+    Args:
+        url (str): 要验证的WebSocket URL
+        
+    Returns:
+        bool: URL格式是否有效
+    """
+    # 检查URL格式
+    ws_pattern = r'^(ws|wss):\/\/[^\s\/$.?#].[^\s]*$'
+    return bool(re.match(ws_pattern, url))

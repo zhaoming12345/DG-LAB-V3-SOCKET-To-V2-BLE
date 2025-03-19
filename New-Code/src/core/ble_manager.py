@@ -1,6 +1,8 @@
 import logging
-from bleak import BleakClient, discover
+from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakError
+from bleak.backends.scanner import AdvertisementData
+from bleak.backends.device import BLEDevice
 from config.constants import (
     BLE_SERVICE_UUID, BLE_CHAR_DEVICE_ID, BLE_CHAR_BATTERY,
     BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
@@ -15,6 +17,23 @@ class BLEManager:
         self.device_address = None
         self.device_id = None
         self.is_connected = False  # 初始化连接状态属性
+        self.has_bluetooth = False  # 添加蓝牙功能状态标志
+        
+    async def check_bluetooth_available(self):
+        """检查系统是否支持蓝牙功能"""
+        try:
+            # 尝试扫描设备，如果成功则说明蓝牙功能可用
+            devices = await BleakScanner.discover(timeout=1.0)  # 使用BleakScanner.discover
+            self.has_bluetooth = True
+            return True
+        except Exception as e:
+            self.has_bluetooth = False
+            logging.error(f"蓝牙功能检查失败: {str(e)}")
+            return False
+            
+    def is_bluetooth_available(self):
+        """获取蓝牙功能状态"""
+        return self.has_bluetooth
         
     async def connect(self, address):
         try:
@@ -64,3 +83,33 @@ class BLEManager:
                 self.signals.log_message.emit(f"发送命令失败: {str(e)}")
                 return False
         return False  # 默认返回False
+
+    async def scan_devices(self):
+        """扫描蓝牙设备"""
+        try:
+            self.signals.log_message.emit("开始扫描蓝牙设备...")
+            # 使用BleakScanner.discover而不是discover
+            devices = await BleakScanner.discover()
+            result = []
+            
+            for device in devices:
+                # 获取设备名称，如果没有则使用地址
+                name = device.name or "Unknown Device"
+                # 获取设备地址
+                address = device.address
+                # 获取RSSI信号强度
+                rssi = device.rssi
+                
+                # 构建设备信息字符串
+                device_info = f"{name} | {address} | RSSI: {rssi}dB"
+                result.append((name, address))
+                
+                # 发送日志消息
+                self.signals.log_message.emit(f"发现设备: {device_info}")
+            
+            return result
+            
+        except Exception as e:
+            self.signals.log_message.emit(f"扫描设备失败: {str(e)}")
+            logging.error(f"扫描设备失败: {str(e)}")
+            return []

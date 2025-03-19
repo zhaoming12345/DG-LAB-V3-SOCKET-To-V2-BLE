@@ -23,7 +23,11 @@
         "status": "设备状态: {0}",
         "connected": "已连接",
         "disconnected": "未连接",
-        "unknown": "未知设备"
+        "unknown": "未知设备",
+        "scanning": "正在扫描设备...",
+        "scan_complete": "扫描完成",
+        "no_devices": "未发现设备",
+        "scan_failed": "扫描失败"
     },
 
     "server": {
@@ -138,7 +142,9 @@
     },
     "error": {
         "invalid_strength_range": "强度值必须在0-200之间",
-        "invalid_strength_value": "请输入有效的强度值"
+        "invalid_strength_value": "请输入有效的强度值",
+        "bluetooth_not_available": "蓝牙功能不可用",
+        "bluetooth_not_available_message": "您的系统不支持蓝牙功能或蓝牙已禁用。\n请检查系统设置并确保蓝牙功能已启用。"
     },
     "theme": {
         "toggle": "切换主题"
