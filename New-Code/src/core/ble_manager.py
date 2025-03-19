@@ -1,20 +1,20 @@
 import logging
 from bleak import BleakClient, discover
-from bleak.exc import BleakError  # 修正导入路径
+from bleak.exc import BleakError
 from config.constants import (
     BLE_SERVICE_UUID, BLE_CHAR_DEVICE_ID, BLE_CHAR_BATTERY,
     BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 )
 
 class BLEManager:
-    def __init__(self, signals):  # 添加signals参数
+    def __init__(self, signals):
         self.connected = False
         self.selected_device = None
         self.client = None
-        self.signals = signals  # 添加信号初始化
+        self.signals = signals  # 信号初始化
         self.device_address = None
         self.device_id = None
-        self.is_connected = False  # 添加连接状态属性
+        self.is_connected = False  # 初始化连接状态属性
         
     async def connect(self, address):
         try:
@@ -63,4 +63,4 @@ class BLEManager:
             except Exception as e:
                 self.signals.log_message.emit(f"发送命令失败: {str(e)}")
                 return False
-        return False  # 添加默认返回值
+        return False  # 默认返回False
