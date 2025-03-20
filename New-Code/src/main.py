@@ -15,8 +15,7 @@ def main():
     # Windows事件循环策略设置
     if sys.platform == 'win32':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        logging.debug("Using proactor: _IocpProactor")
-    
+        
     # 初始化应用
     app = QApplication(sys.argv)
     
