@@ -63,4 +63,4 @@ pip install pyside6 qasync websockets bleak pyqtgraph
 
 ## 为进一步防止官方找上门来，本项目已使用[Peer Production License对等生产许可证（PPL）](LICENSE)保护
 
-~~*注：该脚本编写时用到了人工智能，如果您反感或看不起使用人工智能编写代码的人，请勿使用该脚本*~~
+~~*注：本项目绝大多数的代码在编写时都用到了人工智能，如果您反感或看不起使用人工智能编写代码的人，请勿使用本项目*~~
