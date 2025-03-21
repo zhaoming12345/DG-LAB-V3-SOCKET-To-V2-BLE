@@ -30,9 +30,9 @@ pip install pyside6 qasync websockets bleak pyqtgraph
 
 ## ToDoList：
 
+### 此处的ToDolist为该项目的全局ToDolist，在新程序稳定可用之前不会推进，目前只会推进新程序的ToDolist，有关新程序的ToDolist及其他更多信息，请点击[此处](/Reconstruction-Announcement.md)查看
+
  - [x] 修复回调数据（有待验证）
- - [ ] 修复重新扫描设备时的错误
- - [ ] 手动控制：测试增加强度后等待10秒自动清零强度
  - [ ] 添加更多语言
  - [ ] 添加检查更新和自动更新
  - [ ] 添加开源许可证
