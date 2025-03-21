@@ -9,7 +9,8 @@
         "accent_color": "Accent Color",
         "choose_color": "Choose Color",
         "background": "Background Image",
-        "choose_image": "Choose Image"
+        "choose_image": "Choose Image",
+        "current_background": "Current Background"
     },
 
     "language": {
@@ -27,7 +28,9 @@
         "scanning": "Scanning for devices...",
         "scan_complete": "Scan complete",
         "no_devices": "No devices found",
-        "scan_failed": "Scan failed"
+        "scan_failed": "Scan failed",
+        "connecting": "Connecting...",
+        "selected": "Selected"
     },
 
     "server": {
@@ -58,7 +61,14 @@
         "wave_title_a": "Channel A Wave",
         "wave_title_b": "Channel B Wave",
         "wave_y_label": "Strength",
-        "wave_x_label": "Time"
+        "wave_x_label": "Time",
+        "device_connected": "Device connected",
+        "device_selected": "Device selected",
+        "connection_failed": "Connection failed",
+        "connection_error": "Connection error",
+        "no_device_selected": "No device selected",
+        "server_connected": "Server connected",
+        "server_connection_failed": "Server connection failed"
     },
 
     "control": {
@@ -80,21 +90,12 @@
         "ok": "OK",
         "cancel": "Cancel",
         "error": "Error",
-        "choose_device": "Select Device",
-        "refresh_devices": "Refresh Device List",
-        "scanning": "Scanning...",
-        "scan_complete": "Scan Complete",
-        "no_devices_found": "No Devices Found",
-        "scan_failed": "Scan Failed: {0}",
-        "bluetooth_not_available": "Bluetooth Not Available",
-        "invalid_url": "Invalid Server Address",
-        "save_config_failed": "Failed to Save Configuration",
-        "choose_color": "Choose Color",
-        "choose_image": "Choose Background Image",
-        "accent_color": "Accent Color",
-        "background_image": "Background Image"
+        "warning": "Warning",
+        "info": "Information",
+        "language_changed": "Language Changed",
+        "restart_required": "Please restart the application for the language change to take effect.",
+        "invalid_url": "Invalid server address"
     },
-
     "status_updates": {
         "personalization_updated": "Personalization settings updated",
         "logs_cleared": "Logs cleared",
@@ -124,7 +125,12 @@
         "invalid_status_value": "Invalid status value",
         "channel_tested": "Channel {channel} test completed",
         "strength_limits_updated": "Strength limits updated",
-        "please_select_device": "Please select a device first"
+        "please_select_device": "Please select a device first",
+        "language_changed": "Language changed",
+        "no_device_connected": "No device connected",
+        "test_wave_sent": "Test wave sent to channel {0}",
+        "test_wave_failed": "Failed to send test wave to channel {0}: {1}",
+        "strength_settings_updated": "Strength settings updated"
     },
     "label": {
         "no_device": "No device selected"
@@ -143,7 +149,8 @@
         "invalid_strength_range": "Strength value must be between 0-200",
         "invalid_strength_value": "Please enter a valid strength value",
         "bluetooth_not_available": "Bluetooth Not Available",
-        "bluetooth_not_available_message": "Your system does not support Bluetooth or Bluetooth is disabled.\nPlease check your system settings and ensure Bluetooth is enabled."
+        "bluetooth_not_available_message": "Your system does not support Bluetooth or Bluetooth is disabled.\nPlease check your system settings and ensure Bluetooth is enabled.",
+        "empty_server_address": "Server address cannot be empty"
     },
     "theme": {
         "toggle": "Toggle Theme"

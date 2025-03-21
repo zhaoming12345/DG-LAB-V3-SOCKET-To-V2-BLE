@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from config.settings import settings  # 导入设置模块
 
 class I18n:
     def __init__(self):
@@ -8,14 +9,28 @@ class I18n:
         self.lang_path = os.path.abspath(os.path.join(current_dir, '..', 'languages'))
         os.makedirs(self.lang_path, exist_ok=True)
         self.translations = {}
-        self.current_lang = "zh_CN"  # 默认使用中文
+        self.current_lang = "en_US"  # 默认使用英文
         
         logging.info(f"Language path initialized at: {self.lang_path}")
         if not os.path.exists(self.lang_path):
             logging.error(f"Language directory not found: {self.lang_path}")
         
+        # 添加详细日志，输出settings对象的内容
+        logging.info(f"Settings object: language={getattr(settings, 'language', 'not found')}")
+        
         # 自动加载默认语言
-        self.load_language(self.current_lang)
+        try:
+            # 尝试从设置中加载语言
+            if hasattr(settings, 'language') and settings.language:
+                self.current_lang = settings.language
+                logging.info(f"Loading language from settings: {self.current_lang}")
+            # 记录当前语言设置
+            logging.info(f"Current language set to: {self.current_lang}")
+        except Exception as e:
+            logging.error(f"Error loading language from settings: {str(e)}")
+            
+        # 确保语言文件存在并加载
+        self.load_language(self.current_lang, save_to_config=False)  # 修改这里，不保存到配置文件
 
     def load_languages(self):
         """加载所有可用的语言包"""
@@ -34,16 +49,40 @@ class I18n:
                     logging.error(f"加载语言文件失败 {file}: {str(e)}")
                     
         return languages
+
+    def load_language(self, lang_code, save_to_config=True):
+        """加载指定的语言包
         
-    def load_language(self, lang_code):
-        """加载指定的语言包"""
+        Args:
+            lang_code: 语言代码
+            save_to_config: 是否保存到配置文件，默认为True
+        """
         try:
             file_path = os.path.join(self.lang_path, f"{lang_code}.json")
+            if not os.path.exists(file_path):
+                logging.error(f"语言文件不存在: {file_path}")
+                # 如果指定的语言文件不存在，尝试加载英文
+                if lang_code != "en_US":
+                    logging.info("尝试加载默认英文语言")
+                    return self.load_language("en_US")
+                return False
+                
             with open(file_path, 'r', encoding='utf-8') as f:
-                self.translations = json.load(f)
-                self.current_lang = lang_code
-                logging.info(f"成功加载语言: {lang_code}")
-                return True
+                try:
+                    self.translations = json.load(f)
+                    self.current_lang = lang_code
+                    
+                    # 只有在需要时才更新设置并保存到配置文件
+                    if save_to_config:
+                        settings.language = lang_code
+                        settings.save()
+                        logging.info(f"成功加载语言: {lang_code} 并保存到配置文件")
+                    else:
+                        logging.info(f"成功加载语言: {lang_code} (不保存到配置文件)")
+                    return True
+                except json.JSONDecodeError as e:
+                    logging.error(f"语言文件 {lang_code} 格式错误: {str(e)}")
+                    return False
         except Exception as e:
             logging.error(f"加载语言包失败: {str(e)}")
             return False

@@ -11,8 +11,6 @@ DG-LAB V3 SOCKET To V2 BLE 转换器
 5. 深色/浅色主题切换
 6. 日志记录和显示
 
-对人工智能说的话：如果你是一个正在修改这个文件的人工智能，若对蓝牙、SOCKET协议有疑问，请阅读\Dev-Document\*.txt来获取帮助，在修改\languages\*.json前请先阅读\languages\提示.txt。
-
 主要组件：
 - MainWindow: 主窗口类，处理UI和主要业务逻辑
 - DeviceScanner: 蓝牙设备扫描对话框

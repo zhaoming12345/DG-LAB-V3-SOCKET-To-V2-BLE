@@ -1,23 +1,32 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
-    QListWidget, QLabel, QWidget
+    QListWidget, QLabel, QWidget, QListWidgetItem  # 添加 QListWidgetItem
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont
 from utils.i18n import i18n
 from utils.async_utils import asyncSlot
 from .styles import get_style
+from config.settings import settings  # 添加这一行导入settings模块
 import logging
+import pyqtgraph as pg  # 添加这一行导入pyqtgraph模块
 
 class DeviceScanner(QDialog):
-    def __init__(self, parent=None, ble_manager=None):
+    def __init__(self, parent, ble_manager):
         super().__init__(parent)
+        self.parent = parent
         self.ble_manager = ble_manager
+        # 使用父窗口的信号对象，而不是创建新的
+        self.signals = self.parent.signals
+        
         self.scan_task = None
         self.selected_device = None
         self.init_ui()
         self.setup_connections()
         self.apply_theme()
+        
+        # 使用QTimer在初始化完成后自动开始扫描
+        QTimer.singleShot(100, self.start_scan)
         
     def init_ui(self):
         self.setWindowTitle(i18n.translate("dialog.choose_device"))
@@ -84,11 +93,27 @@ class DeviceScanner(QDialog):
         self.device_list.itemDoubleClicked.connect(self.on_device_selected)
         
     def apply_theme(self):
-        """应用主题样式"""
-        # 获取父窗口的样式设置
-        parent = self.parent()
+        """应用当前主题"""
+        # 获取父窗口
+        parent = self.parent
+        
+        # 应用默认样式表
+        style = get_style("dark")  # 使用默认的深色主题
+        self.setStyleSheet(style)
+        
+        # 更新波形图颜色
+        if hasattr(self, 'plot_widget'):
+            # 设置背景为透明
+            self.plot_widget.setBackground('transparent')
+            
+            # 设置轴线颜色
+            axis_pen = pg.mkPen(color='#ffffff', width=1)
+            self.plot_widget.getAxis('bottom').setPen(axis_pen)
+            self.plot_widget.getAxis('left').setPen(axis_pen)
+            
+        # 从父窗口获取主题设置
         if parent and hasattr(parent, 'signals'):
-            # 尝试从父窗口或settings获取颜色和背景图片
+            # 尝试从父窗口获取颜色和背景图片
             accent_color = "#7f744f"  # 默认值
             background_image = ""
             
@@ -98,8 +123,13 @@ class DeviceScanner(QDialog):
             if hasattr(parent, 'background_image'):
                 background_image = parent.background_image
                 
-            style_sheet = get_style(accent_color, background_image)
-            self.setStyleSheet(style_sheet)
+            # 使用父窗口的样式
+            if hasattr(parent, 'styleSheet') and parent.styleSheet():
+                self.setStyleSheet(parent.styleSheet())
+            else:
+                # 否则使用默认样式
+                style_sheet = get_style(accent_color, background_image)
+                self.setStyleSheet(style_sheet)
         
     @asyncSlot()
     async def start_scan(self):
@@ -121,6 +151,9 @@ class DeviceScanner(QDialog):
                     self.refresh_btn.setEnabled(True)
                     return
                 
+            # 添加日志记录
+            self.signals.log_message.emit(i18n.translate("status_updates.scanning_devices"))
+            
             devices = await self.ble_manager.scan_devices()
             
             if devices:
@@ -129,12 +162,15 @@ class DeviceScanner(QDialog):
                     item.setData(Qt.UserRole, address)  # 存储设备地址
                     self.device_list.addItem(item)
                 self.status_label.setText(i18n.translate("device.scan_complete"))
+                self.signals.log_message.emit(i18n.translate("status_updates.scan_complete", len(devices)))
             else:
                 self.status_label.setText(i18n.translate("device.no_devices"))
+                self.signals.log_message.emit(i18n.translate("status_updates.no_devices_found"))
                 
         except Exception as e:
             self.status_label.setText(i18n.translate("device.scan_failed"))
             logging.error(f"扫描设备失败: {str(e)}")
+            self.signals.log_message.emit(f"{i18n.translate('device.scan_failed')}: {str(e)}")
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, 
                               i18n.translate("dialog.error"),
@@ -142,15 +178,23 @@ class DeviceScanner(QDialog):
         
         self.refresh_btn.setEnabled(True)
             
-    def on_device_selected(self, item):
+    def on_device_selected(self):
         """处理设备选择"""
-        address = item.data(Qt.UserRole)  # 获取存储的设备地址
-        
-        # 安全地访问parent和signals
-        parent = self.parent()
-        if parent and hasattr(parent, 'signals') and parent.signals:
-            parent.signals.device_selected.emit(address)
-        else:
-            logging.error("无法发送设备选择信号：父窗口或信号对象不存在")
+        selected_items = self.device_list.selectedItems()
+        if selected_items:
+            selected_item = selected_items[0]
+            device_address = selected_item.data(Qt.UserRole)
+            device_name = selected_item.text().split(" (")[0]
             
-        self.accept()
+            # 设置选中的设备
+            self.ble_manager.selected_device = device_address
+            self.ble_manager.selected_device_name = device_name
+            
+            # 发送设备选择信号
+            self.signals.device_selected.emit(device_address)
+            
+            # 添加日志记录
+            self.signals.log_message.emit(i18n.translate("status_updates.device_selected", device_name))
+            
+            # 关闭对话框
+            self.accept()

@@ -9,7 +9,8 @@
         "accent_color": "强调色",
         "choose_color": "选择颜色",
         "background": "背景图片",
-        "choose_image": "选择图片"
+        "choose_image": "选择图片",
+        "current_background": "当前背景"
     },
 
     "language": {
@@ -27,7 +28,9 @@
         "scanning": "正在扫描设备...",
         "scan_complete": "扫描完成",
         "no_devices": "未发现设备",
-        "scan_failed": "扫描失败"
+        "scan_failed": "扫描失败",
+        "connecting": "正在连接...",
+        "selected": "已选择"
     },
 
     "server": {
@@ -58,7 +61,14 @@
         "wave_title_a": "通道A波形",
         "wave_title_b": "通道B波形",
         "wave_y_label": "强度",
-        "wave_x_label": "时间"
+        "wave_x_label": "时间",
+        "device_connected": "设备已连接",
+        "device_selected": "设备已选择",
+        "connection_failed": "连接失败",
+        "connection_error": "连接错误",
+        "no_device_selected": "未选择设备",
+        "server_connected": "服务器已连接",
+        "server_connection_failed": "服务器连接失败"
     },
 
     "control": {
@@ -80,6 +90,8 @@
         "ok": "确定",
         "cancel": "取消",
         "error": "错误",
+        "warning": "警告",
+        "info": "信息",
         "choose_device": "选择设备",
         "refresh_devices": "刷新设备列表",
         "scanning": "扫描中...",
@@ -124,7 +136,11 @@
         "invalid_status_value": "无效的状态值",
         "channel_tested": "通道 {channel} 测试完成",
         "strength_limits_updated": "强度上限已更新",
-        "please_select_device": "请先选择设备"
+        "please_select_device": "请先选择设备",
+        "language_changed": "语言已更改",
+        "no_device_connected": "没有设备连接",
+        "test_wave_sent": "已发送测试波形到{0}通道",
+        "test_wave_failed": "发送测试波形到{0}通道失败: {1}"
     },
     "label": {
         "no_device": "当前未选择设备"
@@ -144,7 +160,8 @@
         "invalid_strength_range": "强度值必须在0-200之间",
         "invalid_strength_value": "请输入有效的强度值",
         "bluetooth_not_available": "蓝牙功能不可用",
-        "bluetooth_not_available_message": "您的系统不支持蓝牙功能或蓝牙已禁用。\n请检查系统设置并确保蓝牙功能已启用。"
+        "bluetooth_not_available_message": "您的系统不支持蓝牙功能或蓝牙已禁用。\n请检查系统设置并确保蓝牙功能已启用。",
+        "empty_server_address": "服务器地址不能为空"
     },
     "theme": {
         "toggle": "切换主题"

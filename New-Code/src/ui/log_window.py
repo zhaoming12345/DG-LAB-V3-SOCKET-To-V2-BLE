@@ -5,6 +5,8 @@ from datetime import datetime
 from utils.i18n import i18n
 from .styles import get_style
 import logging
+from utils.logger import log_emitter  # 导入日志信号发射器
+from config.settings import settings  # 添加这一行，导入settings
 
 class LogWindow(QMainWindow):
     # 添加关闭信号
@@ -37,49 +39,43 @@ class LogWindow(QMainWindow):
         layout.addWidget(self.log_area)
         
         # 清除按钮
-        self.clear_btn = QPushButton(i18n.translate("log.clear"))
-        self.clear_btn.setFixedWidth(150)  # 使用旧版按钮宽度
-        self.clear_btn.clicked.connect(self.clear_logs)
-        layout.addWidget(self.clear_btn, 0, Qt.AlignCenter)  # 居中对齐
+        clear_btn = QPushButton(i18n.translate("log.clear"))
+        clear_btn.clicked.connect(self.clear_log)
+        layout.addWidget(clear_btn)
         
-        # 添加日志处理器
-        self.log_handler = QTextEditHandler(self.log_area)
-        self.log_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', 
-                                                      datefmt='%H:%M:%S'))
-        logging.getLogger().addHandler(self.log_handler)
+        # 连接日志信号
+        log_emitter.log_signal.connect(self.append_log)
+        
+        # 应用样式
+        self.apply_theme()
         
     def append_log(self, message):
-        """添加日志消息"""
-        timestamp = datetime.now().strftime('%H:%M:%S')
-        self.log_area.append(f"[{timestamp}] {message}")
-        # 自动滚动到底部
-        self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
+        """添加日志消息到日志区域"""
+        try:
+            # 添加时间戳（如果消息中没有）
+            if not message.startswith('['):
+                from datetime import datetime
+                timestamp = datetime.now().strftime('[%H:%M:%S]')
+                message = f"{timestamp} {message}"
+                
+            self.log_area.append(message)
+            # 自动滚动到底部
+            scrollbar = self.log_area.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
+        except Exception as e:
+            logging.error(f"添加日志到UI失败: {str(e)}")
         
-    def clear_logs(self):
-        """清除所有日志"""
+    def clear_log(self):
+        """清除日志区域"""
         self.log_area.clear()
-        logging.info(i18n.translate("status_updates.logs_cleared"))
-        
-    def apply_theme(self, accent_color, background_image):
-        """应用主题样式"""
-        style_sheet = get_style(accent_color, background_image)
-        self.setStyleSheet(style_sheet)
+        logging.info("日志窗口已清空")
         
     def closeEvent(self, event: QCloseEvent):
         """窗口关闭事件处理"""
-        # 移除日志处理器
-        logging.getLogger().removeHandler(self.log_handler)
         self.window_closed.emit()
+        logging.info("日志窗口已关闭")
         event.accept()
 
-class QTextEditHandler(logging.Handler):
-    """自定义日志处理器，将日志输出到QTextEdit"""
-    def __init__(self, text_edit):
-        super().__init__()
-        self.text_edit = text_edit
-        
-    def emit(self, record):
-        msg = self.format(record)
-        self.text_edit.append(msg)
-        # 自动滚动到底部
-        self.text_edit.verticalScrollBar().setValue(self.text_edit.verticalScrollBar().maximum())
+    def apply_theme(self):
+        """应用主题样式"""
+        self.setStyleSheet(get_style(settings.accent_color, settings.background_image))
