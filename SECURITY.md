@@ -2,11 +2,11 @@
 
 ## 受支持的版本
 
-| Version | Supported          |
-| ------- | ------------------ |
-| Insidre-Previe-20250322-rc0 | :x: |
-| V1.0.0semver | :white_check_mark: |
-| <V1.0.0semver | :x: |
+| 版本号                      | 支持状态                |
+| --------------------------- | ----------------------- |
+| Insidre-Previe-20250322-rc0 | :x:                     |
+| V1.0.0semver                | :white_check_mark:      |
+| <V1.0.0semver               | :x:                     |
 
 ## 报告漏洞
 
