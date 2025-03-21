@@ -55,6 +55,26 @@ pip install pyside6 qasync websockets bleak pyqtgraph
 
 [郊狼官方SOCKETV3控制协议支持文档](https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE/blob/main/socket/README.md)
 
+## 社交媒体：
+
+QQ群组：985349267
+
+[Telegram群组（常规）](https://t.me/Jimmy32767255_Group)
+
+[Telegram群组（话题模式）](https://t.me/Jimmy32767255_Community_recover)
+
+[本项目作者BiliBili主页](https://space.bilibili.com/1370311514)
+
+## 联系作者：
+
+QQ号：3934093256
+
+Telegram用户名：@Jimmy32767255
+
+E-mail（电子邮件）：Jimmy32767255@outlook.com
+
+SMS（短信）：+8615015015297
+
 ## 其他杂项：
 
 [介绍和教程视频](https://www.bilibili.com/video/BV1uMQzYaEZK/)
