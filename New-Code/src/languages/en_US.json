@@ -130,7 +130,8 @@
         "no_device_connected": "No device connected",
         "test_wave_sent": "Test wave sent to channel {0}",
         "test_wave_failed": "Failed to send test wave to channel {0}: {1}",
-        "strength_settings_updated": "Strength settings updated"
+        "strength_settings_updated": "Strength settings updated",
+        "strength_adjusted": "Channel {0} strength adjusted to {1}"
     },
     "label": {
         "no_device": "No device selected"

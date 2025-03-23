@@ -40,83 +40,81 @@ class StrengthManagerUI:
         # 记录日志，确认加载的值
         logging.info(f"加载强度设置到UI: A={a_max}, B={b_max}")
         
-        # 设置输入框的值
+        # 设置输入框的值 - 修正组件名称
         self.main_window.a_limit_input.setText(str(a_max))
         self.main_window.b_limit_input.setText(str(b_max))
         
         # 更新显示
         self.update_strength_display()
         
+    @asyncSlot()
     async def save_strength_settings(self):
         """保存强度设置"""
         try:
-            # 获取输入值
+            # 获取当前设置的值
             a_max = int(self.main_window.a_limit_input.text())
             b_max = int(self.main_window.b_limit_input.text())
             
-            # 验证范围
-            if not (0 <= a_max <= 200) or not (0 <= b_max <= 200):
-                QMessageBox.warning(
-                    self.main_window,
-                    i18n.translate("dialog.error"),
-                    i18n.translate("error.strength_range")
-                )
-                self.signals.log_message.emit(i18n.translate("error.strength_range"))
-                return
-                
-            # 记录旧值，用于日志
-            old_a = self.ble_manager.max_strength['A']
-            old_b = self.ble_manager.max_strength['B']
-                
-            # 更新BLE管理器中的最大强度
-            self.ble_manager.max_strength['A'] = a_max
-            self.ble_manager.max_strength['B'] = b_max
+            # 验证输入值
+            if a_max < 0 or a_max > 200 or b_max < 0 or b_max > 200:
+                self.signals.log_message.emit("强度值必须在0-200范围内")
+                return False
             
-            # 同步更新Socket管理器中的最大强度
+            # 更新BLE管理器的最大强度设置
+            self.main_window.ble_manager.max_strength['A'] = a_max
+            self.main_window.ble_manager.max_strength['B'] = b_max
+            
+            # 更新Socket管理器的最大强度设置
             self.main_window.socket_manager.max_strength['A'] = a_max
             self.main_window.socket_manager.max_strength['B'] = b_max
             
-            # 保存到设置
+            # 更新设置对象
             settings.max_strength_a = a_max
             settings.max_strength_b = b_max
+            
+            # 保存设置到文件
             settings.save()
             
-            self.signals.log_message.emit(i18n.translate("status_updates.strength_settings_updated", 
-                                                        f"A: {old_a}->{a_max}, B: {old_b}->{b_max}"))
-                
-            # 更新显示
-            self.update_strength_display()
+            # 记录日志
+            self.main_window.signals.log_message.emit(f"最大强度设置已保存: A={a_max}, B={b_max}")
+            logging.info(f"保存的最大强度: A={a_max}, B={b_max}")
             
-            # 向服务器发送更新后的强度设置
-            if self.main_window.socket_manager.ws:
-                result = await self.main_window.socket_manager.send_strength_update()
-                if result:
-                    self.signals.log_message.emit("已向服务器发送更新后的强度设置")
-                    logging.info("已向服务器发送更新后的强度设置")
-                else:
-                    self.signals.log_message.emit("向服务器发送强度设置失败")
-                    logging.warning("向服务器发送强度设置失败")
-                
+            # 如果Socket已连接，发送更新到服务器
+            if self.main_window.socket_manager.is_connected:
+                try:
+                    # 发送强度更新
+                    await self.main_window.socket_manager.send_strength_update()
+                    self.main_window.signals.log_message.emit("已发送强度更新到服务器")
+                except Exception as e:
+                    self.main_window.signals.log_message.emit(f"发送强度更新到服务器失败: {str(e)}")
+                    logging.error(f"发送强度更新到服务器失败: {str(e)}")
+            
+            return True
         except ValueError:
-            QMessageBox.warning(
-                self.main_window,
-                i18n.translate("dialog.error"),
-                i18n.translate("error.invalid_number")
-            )
-            self.signals.log_message.emit(i18n.translate("error.invalid_number"))
-            
+            self.main_window.signals.log_message.emit("请输入有效的数字")
+            logging.error("保存强度设置失败: 输入的不是有效数字")
+            return False
+        except Exception as e:
+            self.main_window.signals.log_message.emit(f"保存强度设置失败: {str(e)}")
+            logging.error(f"保存强度设置失败: {str(e)}")
+            return False
+    
     def update_strength_display(self):
         """更新强度显示"""
-        # 更新A通道状态
-        self.main_window.a_status.setText(i18n.translate(
-            "status.channel_a", 
-            self.ble_manager.current_strength['A'],
-            self.ble_manager.max_strength['A']
-        ))
-        
-        # 更新B通道状态
-        self.main_window.b_status.setText(i18n.translate(
-            "status.channel_b", 
-            self.ble_manager.current_strength['B'],
-            self.ble_manager.max_strength['B']
-        ))
+        try:
+            # 更新当前强度显示
+            a_strength = self.ble_manager.current_strength['A']
+            b_strength = self.ble_manager.current_strength['B']
+            
+            # 更新最大强度显示
+            a_max = self.ble_manager.max_strength['A']
+            b_max = self.ble_manager.max_strength['B']
+            
+            # 更新UI显示
+            self.main_window.a_strength_label.setText(f"A: {a_strength}/{a_max}")
+            self.main_window.b_strength_label.setText(f"B: {b_strength}/{b_max}")
+            
+            # 记录日志
+            logging.debug(f"更新强度显示: A={a_strength}/{a_max}, B={b_strength}/{b_max}")
+        except Exception as e:
+            logging.error(f"更新强度显示失败: {str(e)}")

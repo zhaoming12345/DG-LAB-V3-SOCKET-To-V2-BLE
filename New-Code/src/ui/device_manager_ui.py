@@ -80,15 +80,15 @@ class DeviceManagerUI:
                 self.signals.log_message.emit(i18n.translate("status_updates.bluetooth_connected"))
                 logging.info(f"设备连接成功: {device_name} ({device_address})")
                 
-                # 启动电池和信号强度更新定时器
-                self.main_window.battery_update_timer.start(30000)  # 30秒更新一次
-                self.main_window.signal_update_timer.start(10000)   # 10秒更新一次
-                
-                # 读取初始电池电量
+                # 立即读取初始状态
                 await self.update_battery()
-                
-                # 读取初始信号强度
                 await self.update_signal_strength()
+                
+                # 启动定时器
+                logging.info("启动电池和信号强度更新定时器")
+                self.main_window.battery_update_timer.start()
+                self.main_window.signal_update_timer.start()
+                
             else:
                 self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.disconnected")))
                 logging.error(f"设备连接失败: {device_name} ({device_address})")
@@ -97,16 +97,6 @@ class DeviceManagerUI:
             self.signals.log_message.emit(i18n.translate("status_updates.connection_failed", str(e)))
             self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.disconnected")))
             logging.error(f"设备连接异常: {str(e)}")
-            
-    def on_connection_changed(self, connected):
-        """处理连接状态变更"""
-        if connected:
-            self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.connected")))
-        else:
-            self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.disconnected")))
-            # 停止定时器
-            self.main_window.battery_update_timer.stop()
-            self.main_window.signal_update_timer.stop()
             
     @asyncSlot()
     async def update_battery(self):
@@ -117,17 +107,89 @@ class DeviceManagerUI:
                 if battery_level is not None:
                     self.main_window.battery_status.setText(i18n.translate("status.battery", battery_level))
                     self.signals.battery_update.emit(battery_level)
+                    # 确保保存到BLEManager属性
+                    self.ble_manager.battery_level = battery_level
         except Exception as e:
             self.signals.log_message.emit(i18n.translate("status_updates.battery_read_failed", str(e)))
             
     @asyncSlot()
     async def update_signal_strength(self):
-        """更新信号强度"""
+        """更新信号强度
+        
+        从设备读取当前信号强度并更新UI显示。
+        信号强度范围通常在 -100 到 0 之间，单位为 dBm：
+        - 大于 -50：信号极好
+        - -50 到 -65：信号良好
+        - -65 到 -75：信号一般
+        - -75 到 -85：信号较弱
+        - 小于 -85：信号很弱
+        """
+        if not self.ble_manager.is_connected:
+            self.main_window.signal_status.setText(i18n.translate("status.signal_unknown"))
+            return
+            
         try:
-            if self.ble_manager.is_connected:
-                signal_strength = await self.ble_manager.read_signal_strength()
-                if signal_strength is not None:
-                    self.main_window.signal_status.setText(i18n.translate("status.signal_strength", signal_strength))
-                    self.signals.signal_update.emit(signal_strength)
+            logging.debug(f"开始获取设备 {self.ble_manager.device_address} 的信号强度")
+            signal_strength = await self.ble_manager.read_signal_strength()
+            
+            if signal_strength is None:
+                # 如果无法获取信号强度，显示未知状态
+                self.main_window.signal_status.setText(i18n.translate("status.signal_unknown"))
+                return
+                
+            # 保存到BLEManager属性
+            self.ble_manager.signal_strength = signal_strength
+            logging.debug(f"成功获取信号强度: {signal_strength} dBm")
+                
+            # 根据信号强度设置不同的状态文本
+            if signal_strength > -50:
+                status_text = i18n.translate("status.signal_excellent")
+            elif signal_strength > -65:
+                status_text = i18n.translate("status.signal_good")
+            elif signal_strength > -75:
+                status_text = i18n.translate("status.signal_fair")
+            elif signal_strength > -85:
+                status_text = i18n.translate("status.signal_weak")
+            else:
+                status_text = i18n.translate("status.signal_very_weak")
+            
+            # 更新UI显示
+            self.main_window.signal_status.setText(f"{status_text} ({signal_strength} dBm)")
+            self.signals.signal_update.emit(signal_strength)
+            logging.debug(f"信号强度更新: {signal_strength} dBm, 状态: {status_text}")
+            
         except Exception as e:
+            # 发生错误时，显示未知状态
+            self.main_window.signal_status.setText(i18n.translate("status.signal_unknown"))
+            logging.error(f"读取信号强度失败: {str(e)}")
+            # 只在真正的错误情况下发送错误消息
             self.signals.log_message.emit(i18n.translate("status_updates.signal_read_failed", str(e)))
+            
+    def on_connection_changed(self, connected):
+        """处理连接状态变更"""
+        if connected:
+            self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.connected")))
+            # 连接成功后立即更新一次状态
+            QTimer.singleShot(0, self.update_battery)
+            QTimer.singleShot(0, self.update_signal_strength)
+            
+            # 确保定时器在连接状态下运行
+            if not self.main_window.battery_update_timer.isActive():
+                logging.info("重新启动电池更新定时器")
+                self.main_window.battery_update_timer.start()
+            if not self.main_window.signal_update_timer.isActive():
+                logging.info("重新启动信号强度更新定时器")
+                self.main_window.signal_update_timer.start()
+        else:
+            self.main_window.device_status.setText(i18n.translate("device.status", i18n.translate("device.disconnected")))
+            # 更新信号状态为未知
+            self.main_window.signal_status.setText(i18n.translate("status.signal_unknown"))
+            self.main_window.battery_status.setText(i18n.translate("status.battery", "--"))
+            
+            # 停止定时器
+            if self.main_window.battery_update_timer.isActive():
+                logging.info("停止电池更新定时器")
+                self.main_window.battery_update_timer.stop()
+            if self.main_window.signal_update_timer.isActive():
+                logging.info("停止信号强度更新定时器")
+                self.main_window.signal_update_timer.stop()

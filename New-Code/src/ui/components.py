@@ -14,10 +14,38 @@ def create_language_group():
     combo = QComboBox()
     combo.setFixedWidth(200)  # 设置固定宽度，避免过小
     
-    # 初始时阻止信号发射，避免在初始化时触发语言切换
-    combo.blockSignals(True)
+    # 设置工具提示
+    combo.setToolTip(i18n.translate("language.setting"))
+    
+    # 设置样式
+    combo.setStyleSheet("""
+        QComboBox {
+            padding: 5px;
+            border: 1px solid #3f3f3f;
+            border-radius: 3px;
+            background: rgba(43, 43, 43, 180);
+            color: white;
+        }
+        QComboBox::drop-down {
+            border: none;
+            width: 20px;
+        }
+        QComboBox::down-arrow {
+            image: url(down_arrow.png);
+            width: 12px;
+            height: 12px;
+        }
+        QComboBox QAbstractItemView {
+            border: 1px solid #3f3f3f;
+            background: rgba(43, 43, 43, 180);
+            color: white;
+            selection-background-color: #3f3f3f;
+        }
+    """)
     
     layout.addWidget(combo)
+    layout.addStretch()  # 添加弹性空间，使下拉框左对齐
+    
     group.setLayout(layout)
     
     return group, combo
@@ -133,6 +161,7 @@ def create_wave_group():
     
     # 波形图
     plot_layout = QHBoxLayout()
+    plot_layout.setSpacing(20)  # 增加波形图之间的间距
     
     # A通道波形图
     plot_a = pg.PlotWidget()
@@ -140,6 +169,7 @@ def create_wave_group():
     plot_a.setLabel('left', i18n.translate("status.wave_y_label"))
     plot_a.setLabel('bottom', i18n.translate("status.wave_x_label"))
     plot_a.showGrid(x=True, y=True)
+    plot_a.setMinimumHeight(250)  # 设置最小高度
     
     # B通道波形图
     plot_b = pg.PlotWidget()
@@ -147,12 +177,13 @@ def create_wave_group():
     plot_b.setLabel('left', i18n.translate("status.wave_y_label"))
     plot_b.setLabel('bottom', i18n.translate("status.wave_x_label"))
     plot_b.showGrid(x=True, y=True)
+    plot_b.setMinimumHeight(250)  # 设置最小高度
     
     plot_layout.addWidget(plot_a)
     plot_layout.addWidget(plot_b)
     
     layout.addLayout(status_layout)
-    layout.addLayout(plot_layout)
+    layout.addLayout(plot_layout, 1)  # 添加拉伸因子，使波形图占据更多空间
     
     group.setLayout(layout)
     

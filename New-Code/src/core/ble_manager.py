@@ -10,6 +10,7 @@ from config.constants import (
     BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2,
     DEFAULT_MAX_STRENGTH
 )
+from config.settings import settings
 from core.protocol import ProtocolConverter
 
 class BLEManager:
@@ -17,60 +18,71 @@ class BLEManager:
         """初始化BLE管理器
         
         Args:
-            signals: 信号对象，用于跨线程通信
+            signals (DeviceSignals): 信号对象，用于UI通信
         """
         self.signals = signals
-        self.device = None
-        self.is_connected = False
-        self.device_id = None
-        self.current_strength = {'A': 0, 'B': 0}  # 当前强度
+        self.client = None  # 使用client替代device
+        self.is_connected = False  # 是否已连接属性
+        self.has_bluetooth = False  # 当前设备蓝牙功能是否可用属性
+        self.device_id = None  # 设备ID属性
+        self.device_address = None  # 设备蓝牙MAC地址属性
+        self.battery_level = None  # 电池电量属性
+        self.signal_strength = None  # 信号强度属性
+        self.current_strength = {'A': 0, 'B': 0}  # 当前强度属性
         
-        # 从settings加载最大强度值
-        from config.settings import settings
+        # 从设置中加载最大强度值
         self.max_strength = {
-            'A': settings.max_strength_a,
+            'A': settings.max_strength_a, 
             'B': settings.max_strength_b
         }
-        
-        logging.info(f"BLEManager初始化，最大强度: A={self.max_strength['A']}, B={self.max_strength['B']}")
+
     async def send_command(self, char_uuid, data):
-        """发送蓝牙命令的核心方法
+        """发送命令到BLE设备
+        
         Args:
-            char_uuid: 蓝牙特征值UUID 
-            data: 要发送的字节数据
+            char_uuid (str): 特征值UUID
+            data (bytes): 要发送的数据
+            
         Returns:
             bool: 命令是否发送成功
         """
-        # 使用Bleak的write_gatt_char方法进行低功耗蓝牙数据写入
-        if not hasattr(self, 'client') or not self.client or not self.client.is_connected:
-            self.signals.log_message.emit("发送蓝牙命令失败: 设备未连接")
-            logging.warning("尝试发送蓝牙命令但设备未连接")
+        if not self.is_connected or not self.client:
+            self.signals.log_message.emit("设备未连接")
+            logging.error("发送命令失败: 设备未连接")
             return False
             
         try:
-            # 增加更详细的日志，包括数据内容的十六进制表示
-            hex_data = data.hex().upper()
-            self.signals.log_message.emit(f"发送蓝牙命令: 特征值={char_uuid}, 数据={hex_data}")
-            logging.info(f"发送蓝牙命令: 特征值={char_uuid}, 数据={hex_data}")
+            # 确保数据是bytes类型
+            if not isinstance(data, bytes):
+                data = bytes(data)
+                
+            # 记录发送的数据
+            logging.info(f"发送命令到特征值 {char_uuid}: {data.hex()}")
             
             await self.client.write_gatt_char(char_uuid, data)
-            self.signals.log_message.emit(f"蓝牙命令发送成功: {char_uuid}")
+            self.signals.log_message.emit(f"命令发送成功 (特征值: {char_uuid})")
             return True
         except Exception as e:
-            self.signals.log_message.emit(f"发送蓝牙命令失败: {str(e)}")
-            logging.error(f"发送蓝牙命令失败: 特征值={char_uuid}, 错误={str(e)}")
+            self.signals.log_message.emit(f"命令发送失败: {str(e)}")
+            logging.error(f"命令发送失败: {str(e)}")
             return False
 
     async def connect(self, address):
+        """连接到指定地址的蓝牙设备
+        
+        Args:
+            address (str): 设备MAC地址
+            
+        Returns:
+            bool: 连接是否成功
+        """
         try:
             self.signals.log_message.emit(f"正在连接蓝牙设备: {address}")
             logging.info(f"正在连接蓝牙设备: {address}")
             
             self.client = BleakClient(address)
             await self.client.connect()
-            self.connected = True  # 更新连接状态
-            self.is_connected = True  # 同步更新is_connected状态
-            self.selected_device = address  # 设置选中设备
+            self.is_connected = True
             self.device_address = address
             
             self.signals.log_message.emit(f"蓝牙设备连接成功: {address}")
@@ -80,63 +92,56 @@ class BLEManager:
             self.signals.connection_changed.emit(True)
             return True
         except Exception as e:
-            self.connected = False  # 更新连接状态
-            self.is_connected = False  # 同步更新is_connected状态
+            self.is_connected = False
+            self.client = None
+            self.device_address = None
             self.signals.log_message.emit(f"蓝牙设备连接失败: {str(e)}")
             logging.error(f"蓝牙设备连接失败: {address}, 错误={str(e)}")
-            # 确保发送连接状态变更信号
             self.signals.connection_changed.emit(False)
             return False
+            
+    async def disconnect(self):
+        """断开蓝牙设备连接"""
+        if self.client and self.is_connected:
+            try:
+                await self.client.disconnect()
+            except Exception as e:
+                logging.error(f"断开设备连接时发生错误: {str(e)}")
+            finally:
+                self.is_connected = False
+                self.client = None
+                self.device_address = None
+                self.signals.connection_changed.emit(False)
 
-    async def send_strength_command(self, channel_num, mode, value):
-        """发送强度调整命令
+    async def send_strength_command(self, channel, strength_type, strength_value):
+        """发送强度命令到设备
         
         Args:
-            channel_num: 通道号(1=A, 2=B)
-            mode: 模式(0=减少, 1=增加, 2=设置)
-            value: 强度值
+            channel (int): 通道号(1=A, 2=B)
+            strength_type (int): 强度类型(1=频率, 2=强度)
+            strength_value (int): 强度值(0-100)
+            
+        Returns:
+            bool: 命令是否发送成功
         """
-        ch = 'A' if channel_num == 1 else 'B'
         try:
-            # 获取当前强度
-            current = self.current_strength[ch]
+            # 确保强度值在有效范围内
+            strength_value = max(0, min(100, strength_value))
             
-            # 根据模式计算新强度
-            if mode == 0:   # 减少强度
-                new = max(0, current - value)
-            elif mode == 1: # 增加强度
-                new = min(self.max_strength[ch], current + value)
-            elif mode == 2: # 设置为指定值
-                new = min(self.max_strength[ch], max(0, value))
-            else:
-                return
+            # 使用PWM_AB2特征值发送强度命令
+            if channel == 1:  # A通道
+                self.current_strength['A'] = strength_value
+                data = ProtocolConverter.encode_pwm_ab2(strength_value, self.current_strength['B'])
+            else:  # B通道
+                self.current_strength['B'] = strength_value
+                data = ProtocolConverter.encode_pwm_ab2(self.current_strength['A'], strength_value)
                 
-            # 确保强度在有效范围内
-            new = max(0, min(new, self.max_strength[ch]))
-            
-            # 保存旧值用于比较
-            old_value = current
-            
-            # 更新当前强度
-            self.current_strength[ch] = new
-            self.signals.log_message.emit(f"通道{ch}强度更新为: {new}")
-            
-            # 编码并发送命令
-            data = ProtocolConverter.encode_pwm_ab2(
-                self.current_strength['A'], 
-                self.current_strength['B']
-            )
-            await self.send_command(BLE_CHAR_PWM_AB2, data)
-            
-            # 更新UI状态
-            self.signals.status_update.emit(ch, str(new))
-            
-            # 发送强度变更信号
-            self.signals.strength_changed.emit()
-            
+            # 发送命令
+            return await self.send_command(BLE_CHAR_PWM_AB2, data)
         except Exception as e:
-            self.signals.log_message.emit(f"调整强度失败: {str(e)}")
-            logging.error(f"调整强度失败: {str(e)}")
+            self.signals.log_message.emit(f"发送强度命令失败: {str(e)}")
+            logging.error(f"发送强度命令失败: {str(e)}")
+            return False
 
     async def update_max_strength(self, channel, value):
         """更新通道最大强度
@@ -159,7 +164,7 @@ class BLEManager:
             self.signals.log_message.emit(f"通道{channel}当前强度已调整为最大值: {value}")
             
             # 更新UI状态
-            self.signals.status_update.emit(channel, str(value))
+            self.signals.status_update.emit({channel: str(value)})
             
             # 发送强度变更信号
             self.signals.strength_changed.emit()
@@ -180,33 +185,6 @@ class BLEManager:
         """获取蓝牙功能状态"""
         return self.has_bluetooth
         
-    async def connect(self, address):
-        try:
-            self.client = BleakClient(address)
-            await self.client.connect()
-            self.connected = True  # 更新连接状态
-            self.is_connected = True  # 同步更新is_connected状态
-            self.selected_device = address  # 设置选中设备
-            self.device_address = address
-            await self.get_device_id()
-            self.signals.connection_changed.emit(True)
-            return True
-        except Exception as e:
-            self.connected = False  # 更新连接状态
-            self.is_connected = False  # 同步更新is_connected状态
-            self.signals.log_message.emit(f"连接失败: {str(e)}")
-            # 确保发送连接状态变更信号
-            self.signals.connection_changed.emit(False)
-            return False
-            
-    async def disconnect(self):
-        if self.client and self.client.is_connected:
-            await self.client.disconnect()
-            self.connected = False  # 更新连接状态
-            self.is_connected = False  # 同步更新is_connected状态
-            self.selected_device = None  # 清空选中设备
-            self.signals.connection_changed.emit(False)
-            
     async def get_device_id(self):
         """获取设备ID"""
         if not self.client or not self.client.is_connected:  # 更完善的检查
@@ -226,42 +204,58 @@ class BLEManager:
             self.signals.log_message.emit(f"获取设备ID失败: {str(e)}")
             
     async def read_battery(self):
-        """读取电池电量"""
-        try:
-            value = await self.client.read_gatt_char(BLE_CHAR_BATTERY)
-            battery_level = int.from_bytes(value, byteorder='little')
-            return battery_level
-        except Exception as e:
-            self.signals.log_message.emit(f"读取电池电量失败: {str(e)}")
+        """读取电池电量
+        
+        Returns:
+            int: 电池电量百分比，如果读取失败则返回None
+        """
+        if not self.is_connected:
             return None
-
-    async def read_signal_strength(self):
-        """读取当前连接设备的信号强度"""
+            
         try:
-            if not self.client or not self.client.is_connected:
-                return None
-                
-            # 在某些平台上，可以直接从客户端获取RSSI
-            if hasattr(self.client, 'get_rssi'):
-                rssi = await self.client.get_rssi()
-                return rssi
-                
-            # 如果客户端没有直接提供RSSI方法，尝试通过扫描获取
-            # 注意：这种方法效率较低，因为需要重新扫描
+            # 尝试读取电池电量特征值
+            battery_data = await self.client.read_gatt_char(BLE_CHAR_BATTERY)
+            if battery_data:
+                battery_level = int(battery_data[0])
+                self.battery_level = battery_level  # 保存电池电量
+                return battery_level
+            return None
+        except Exception as e:
+            logging.error(f"读取电池电量失败: {str(e)}")
+            return None
+    
+    async def read_signal_strength(self):
+        """读取信号强度
+        
+        Returns:
+            int: 信号强度(dBm)，如果读取失败则返回None
+        """
+        if not self.is_connected:
+            return None
+            
+        try:
             scanner = BleakScanner()
             await scanner.start()
-            await asyncio.sleep(1.0)  # 扫描1秒
+            await asyncio.sleep(3.0)  # 扫描3秒
+            
+            # 停止扫描并获取结果
+            devices = await scanner.get_discovered_devices()
             await scanner.stop()
             
-            for device in scanner.discovered_devices:
-                if device.address == self.device_address:
+            # 查找匹配的设备
+            for device in devices:
+                if device.address.upper() == self.device_address.upper():
+                    self.signal_strength = device.rssi
+                    logging.debug(f"获取到设备 {self.device_address} 的信号强度: {device.rssi} dBm")
                     return device.rssi
-                    
+            
+            # 如果没有找到设备
+            logging.warning(f"无法获取设备 {self.device_address} 的信号强度")
             return None
         except Exception as e:
-            self.signals.log_message.emit(f"读取信号强度失败: {str(e)}")
+            logging.error(f"读取信号强度失败: {str(e)}")
             return None
-            
+    
     async def scan_devices(self):
         """扫描可用的蓝牙设备
         
@@ -328,7 +322,7 @@ class BLEManager:
             if success:
                 self.signals.log_message.emit(f"已设置{channel}通道强度为{strength}")
                 # 更新UI状态
-                self.signals.status_update.emit(channel, str(strength))
+                self.signals.status_update.emit({channel: str(strength)})
                 # 发送强度变更信号
                 self.signals.strength_changed.emit()
                 
@@ -457,8 +451,7 @@ class BLEManager:
             if success:
                 self.signals.log_message.emit(f"已设置A通道强度为{a_strength}，B通道强度为{b_strength}")
                 # 更新UI状态
-                self.signals.status_update.emit('A', str(a_strength))
-                self.signals.status_update.emit('B', str(b_strength))
+                self.signals.status_update.emit({'A': str(a_strength), 'B': str(b_strength)})
                 # 发送强度变更信号
                 self.signals.strength_changed.emit()
                 
@@ -537,3 +530,115 @@ class BLEManager:
                 'connected': self.is_connected,
                 'error': str(e)
             }
+
+    async def set_strength(self, channel, strength):
+        """设置通道强度
+        
+        Args:
+            channel (str): 通道标识('A'或'B')
+            strength (int): 强度值(0-100)
+            
+        Returns:
+            bool: 操作是否成功
+        """
+        if not self.is_connected:
+            logging.warning("尝试设置强度但设备未连接")
+            return False
+            
+        try:
+            # 验证强度范围
+            max_strength = self.max_strength[channel]
+            if strength < 0 or strength > max_strength:
+                logging.warning(f"强度值超出范围: {strength}, 最大值: {max_strength}")
+                return False
+                
+            # 更新当前强度属性
+            self.current_strength[channel] = strength
+            
+            # 编码并发送命令
+            data = ProtocolConverter.encode_pwm_ab2(
+                self.current_strength['A'], 
+                self.current_strength['B']
+            )
+            success = await self.send_command(BLE_CHAR_PWM_AB2, data)
+            
+            if success:
+                self.signals.log_message.emit(f"已设置{channel}通道强度为{strength}")
+                # 更新UI状态
+                self.signals.status_update.emit({channel: str(strength)})
+                # 发送强度变更信号
+                self.signals.strength_changed.emit()
+                
+            return success
+            
+        except Exception as e:
+            self.signals.log_message.emit(f"设置通道强度失败: {str(e)}")
+            logging.error(f"设置通道强度失败: {str(e)}")
+            return False
+            
+    async def adjust_strength(self, channel, delta):
+        """调整通道强度的异步方法
+        
+        Args:
+            channel (str): 通道标识('A'或'B')
+            delta (int): 强度变化值(+1或-1)
+            
+        流程：
+        1. 检查设备连接状态
+        2. 获取当前强度和最大强度限制
+        3. 计算新强度值并验证范围
+        4. 发送强度调整命令
+        5. 更新UI显示
+        """
+        # 检查设备连接状态
+        if not self.is_connected:
+            self.signals.log_message.emit("设备未连接")
+            return
+            
+        try:
+            # 获取当前强度和限制
+            current = self.current_strength[channel]
+            max_strength = self.max_strength[channel]
+            new_strength = current + delta
+            
+            # 验证并设置新强度
+            if 0 <= new_strength <= max_strength:
+                # 发送强度调整命令
+                await self.set_strength(channel, new_strength)
+                # 发送状态更新消息
+                self.signals.log_message.emit(f"通道{channel}强度已调整：{current} -> {new_strength}")
+                logging.info(f"通道{channel}强度已调整：{current} -> {new_strength}")
+        except Exception as e:
+            # 错误处理
+            error_msg = str(e)
+            self.signals.log_message.emit(f"调整通道{channel}强度失败: {error_msg}")
+            logging.error(f"调整通道{channel}强度失败: {error_msg}")
+
+    async def clear_channel(self, channel):
+        """清空指定通道的波形队列
+        
+        Args:
+            channel (str): 通道标识('A'或'B')
+            
+        Returns:
+            bool: 操作是否成功
+        """
+        if not self.is_connected or not self.client:
+            self.signals.log_message.emit("设备未连接，无法清空波形队列")
+            return False
+            
+        try:
+            # 根据通道选择特征值UUID
+            char_uuid = BLE_CHAR_PWM_A34 if channel == 'A' else BLE_CHAR_PWM_B34
+            
+            # 发送空波形数据来清空队列
+            # 使用x=1, y=1, z=0的参数，表示停止输出
+            data = ProtocolConverter.encode_pwm_channel(1, 1, 0)
+            await self.send_command(char_uuid, data)
+            
+            self.signals.log_message.emit(f"通道{channel}波形队列已清空")
+            return True
+        except Exception as e:
+            self.signals.log_message.emit(f"清空通道{channel}波形队列失败: {str(e)}")
+            logging.error(f"清空通道{channel}波形队列失败: {str(e)}")
+            return False
