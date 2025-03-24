@@ -1,8 +1,0 @@
-{
-    "socket_uri": "ws://192.168.1.50:30/1234-123456789-12345-12345-01",
-    "language": "zh_CN",
-    "accent_color": "#7f744f",
-    "background_image": "D:\\DG-LAB-V3-SOCKET-To-V2-BLE\\New-Code\\background.png",
-    "max_strength_a": 60,
-    "max_strength_b": 0
-}
