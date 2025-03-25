@@ -29,8 +29,8 @@ class ServerManagerUI:
             self.signals.log_message.emit(i18n.translate("status_updates.server_address_empty"))
             return
             
-        # 验证WebSocket URL格式 - 放宽验证条件
-        # 只要求以ws://或wss://开头即可
+        # 验证WebSocket URL格式
+        # 要求以ws://或wss://开头
         if not address.startswith(('ws://', 'wss://')):
             address = 'ws://' + address
             logging.info(f"添加ws://前缀: {address}")
@@ -53,7 +53,7 @@ class ServerManagerUI:
             logging.warning("尝试连接服务器但地址为空")
             return
             
-        # 验证WebSocket URL格式 - 放宽验证条件
+        # 验证WebSocket URL格式
         if not address.startswith(('ws://', 'wss://')):
             address = 'ws://' + address
             logging.info(f"添加ws://前缀: {address}")

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QMessageBox
 from qasync import asyncSlot
-import asyncio  # 导入asyncio
+import asyncio
 import logging
 from utils.i18n import i18n
 from config.settings import settings
@@ -17,7 +17,7 @@ class StrengthManagerUI:
         
     def setup_connections(self):
         """设置信号连接"""
-        # 保存强度设置按钮 - 使用asyncSlot
+        # 使用asyncSlot保存强度设置按钮
         # 修改这里，使用正确的方式连接异步槽函数
         self.main_window.save_strength_btn.clicked.connect(self.on_save_strength_clicked)
         # 强度变更信号
@@ -40,7 +40,7 @@ class StrengthManagerUI:
         # 记录日志，确认加载的值
         logging.info(f"加载强度设置到UI: A={a_max}, B={b_max}")
         
-        # 设置输入框的值 - 修正组件名称
+        # 设置输入框的值
         self.main_window.a_limit_input.setText(str(a_max))
         self.main_window.b_limit_input.setText(str(b_max))
         

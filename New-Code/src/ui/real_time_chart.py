@@ -28,6 +28,14 @@ class RealTimeChart(QWidget):
         self.plot_widget.setLabel('bottom', '时间' if self.channel == 'B' else '角度')
         self.plot_widget.showGrid(x=True, y=True)
         
+        # 禁用鼠标交互和菜单
+        self.plot_widget.setMouseEnabled(x=False, y=False)
+        self.plot_widget.setMenuEnabled(False)
+        view_box = self.plot_widget.getViewBox()
+        view_box.setMouseMode(pg.ViewBox.RectMode)
+        view_box.setMouseEnabled(x=False, y=False)
+        view_box.enableAutoRange(enable=False)
+        
         # 应用主题
         self.apply_theme()
         
