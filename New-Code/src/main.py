@@ -1,7 +1,7 @@
 # 程序版本：Insidre-Previe-20250325-rc0
 import sys
 import os
-import json  # 添加json模块导入
+import json
 import logging
 import asyncio
 import qasync
@@ -11,9 +11,9 @@ from PySide6.QtWidgets import QApplication
 from config.settings import settings
 
 from ui.main_window import MainWindow
-# 修改这一行，导入setup_logging函数
+# 导入setup_logging
 from utils.logger import setup_logging
-# 添加ProtocolConverter导入 - 修正导入路径
+# 导入ProtocolConverter
 from core.protocol import ProtocolConverter, BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 
 def main():
