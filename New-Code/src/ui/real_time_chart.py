@@ -28,6 +28,25 @@ class RealTimeChart(QWidget):
         self.plot_widget.setLabel('bottom', '时间' if self.channel == 'B' else '角度')
         self.plot_widget.showGrid(x=True, y=True)
         
+        # 禁用所有交互
+        self.plot_widget.setMouseEnabled(x=False, y=False)
+        self.plot_widget.setMenuEnabled(False)
+        view_box = self.plot_widget.getViewBox()
+        view_box.setMouseMode(pg.ViewBox.RectMode)
+        view_box.setMouseEnabled(x=False, y=False)
+        view_box.enableAutoRange(enable=False)
+        
+        # 禁用所有可能的交互操作
+        self.plot_widget.hideButtons()  # 隐藏所有按钮
+        for item in self.plot_widget.items():
+            if hasattr(item, 'setMovable'):
+                item.setMovable(False)
+            if hasattr(item, 'setSelectable'):
+                item.setSelectable(False)
+        
+        # 禁用键盘交互
+        self.plot_widget.setFocusPolicy(Qt.NoFocus)
+        
         # 应用主题
         self.apply_theme()
         
@@ -87,6 +106,12 @@ class RealTimeChart(QWidget):
         axis_pen = pg.mkPen(color='#888888', width=1)
         self.plot_widget.getAxis('left').setPen(axis_pen)
         self.plot_widget.getAxis('bottom').setPen(axis_pen)
+        
+        # 禁用坐标轴交互
+        self.plot_widget.getAxis('left').setStyle(tickTextOffset=10)
+        self.plot_widget.getAxis('bottom').setStyle(tickTextOffset=10)
+        self.plot_widget.getAxis('left').mouseDragEvent = lambda *args: None
+        self.plot_widget.getAxis('bottom').mouseDragEvent = lambda *args: None
         
         # 设置网格样式
         self.plot_widget.showGrid(x=True, y=True, alpha=0.3)
