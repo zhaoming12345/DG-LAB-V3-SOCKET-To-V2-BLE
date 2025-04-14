@@ -20,7 +20,8 @@ class SocketManager:
         # 添加通道强度状态跟踪
         self.channel_intensity = {'A': 0, 'B': 0}  # A通道和B通道的当前强度
         self.message_queue = asyncio.Queue()
-        asyncio.create_task(self._process_message_queue())
+        # 延迟创建异步任务，等待事件循环启动
+        self._task = None
         
         # 从设置中加载最大强度值
         self.max_strength = {
@@ -142,8 +143,8 @@ class SocketManager:
                 self.signals.connection_changed.emit(False)
                 self.ws = None
                 await asyncio.sleep(reconnect_delay)
-    except Exception as e:
-        self.signals.log_message.emit(f"WebSocket接收消息错误: {str(e)}")
+            except Exception as e:
+                self.signals.log_message.emit(f"WebSocket接收消息错误: {str(e)}")
         
     async def _process_message_queue(self):
         """处理消息队列"""

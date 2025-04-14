@@ -92,6 +92,9 @@ class MainWindow(QMainWindow):
         logging.info(f"BLE管理器初始化完成，最大强度配置：A={self.ble_manager.max_strength['A']}, B={self.ble_manager.max_strength['B']}")
         
         # 创建Socket管理器
+        # 确保事件循环已启动
+        if not asyncio.get_event_loop().is_running():
+            asyncio.set_event_loop(asyncio.new_event_loop())
         self.socket_manager = SocketManager(self.signals, self.ble_manager)
         
         # 日志窗口初始为None，首次显示时才创建
@@ -127,21 +130,21 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(i18n.translate("main_title"))
         self.setGeometry(100, 100, 1250, 965)  # 窗口默认大小
         
-        # 创建中心部件和主布局
+        # 中心部件和主布局
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
         main_layout.setSpacing(15)  # 增加布局间距
         main_layout.setContentsMargins(15, 15, 15, 15)  # 增加边距
         
-        # 创建顶部标题栏
+        # 顶部标题栏
         self.title_layout = QHBoxLayout()
         title_label = QLabel(i18n.translate("main_title"))
         title_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 15px;")
         self.title_layout.addWidget(title_label)
         self.title_layout.addStretch()
         
-        # 添加顶部工具栏按钮
+        # 顶部工具栏按钮
         self.log_btn = QPushButton(i18n.translate("log.show"))
         self.theme_btn = QPushButton(i18n.translate("personalization.button"))
         self.log_btn.setFixedWidth(150)
@@ -157,6 +160,14 @@ class MainWindow(QMainWindow):
         self.server_group, self.server_input, self.server_save_btn, self.server_connect_btn = create_server_group()
         self.strength_group, self.a_limit_input, self.b_limit_input, self.save_strength_btn = create_strength_group()
         self.wave_group, self.a_status, self.b_status, self.battery_status, self.signal_status, self.plot_widget_a, self.plot_widget_b = create_wave_group()
+        
+        # 强度显示标签
+        self.a_strength_label = QLabel('0%')
+        self.b_strength_label = QLabel('0%')
+        wave_layout.addWidget(QLabel(i18n.translate("status.strength_a")))
+        wave_layout.addWidget(self.a_strength_label)
+        wave_layout.addWidget(QLabel(i18n.translate("status.strength_b")))
+        wave_layout.addWidget(self.b_strength_label)
         
         # 创建手动控制组件
         self.control_group = QGroupBox(i18n.translate("control.manual"))
