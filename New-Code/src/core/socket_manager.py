@@ -327,14 +327,18 @@ class SocketManager:
                         self.channel_intensity['B'] = self.max_strength['B']
                     
                     # 发送强度命令到设备
-                    if self.ble_manager and self.ble_manager.is_connected:
+                    if self.ble_manager and self.ble_manager.is_connected and self.ble_manager.client:
                         # 编码PWM_AB2命令
                         pwm_data = ProtocolConverter.encode_pwm_ab2(
                             self.channel_intensity['A'], 
                             self.channel_intensity['B']
                         )
                         # 发送到设备
-                        success = await self.ble_manager.send_command(BLE_CHAR_PWM_AB2, pwm_data)
+                        try:
+                            success = await self.ble_manager.send_command(BLE_CHAR_PWM_AB2, pwm_data)
+                        except Exception as e:
+                            logging.error(f"发送强度命令到设备时发生错误: {str(e)}")
+                            success = False
                         if success:
                             logging.info(f"已发送强度命令到设备: A={self.channel_intensity['A']}, B={self.channel_intensity['B']}")
                             # 通知UI更新强度显示
@@ -396,7 +400,7 @@ class SocketManager:
                             
                             # 发送到对应通道
                             char_uuid = BLE_CHAR_PWM_A34 if channel == 'A' else BLE_CHAR_PWM_B34
-                            if self.ble_manager and self.ble_manager.is_connected:
+                            if self.ble_manager and self.ble_manager.is_connected and self.ble_manager.client:
                                 success = await self.ble_manager.send_command(char_uuid, pwm_data)
                                 if success:
                                     success_count += 1

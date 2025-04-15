@@ -164,10 +164,11 @@ class MainWindow(QMainWindow):
         # 强度显示标签
         self.a_strength_label = QLabel('0%')
         self.b_strength_label = QLabel('0%')
-        wave_layout.addWidget(QLabel(i18n.translate("status.strength_a")))
-        wave_layout.addWidget(self.a_strength_label)
-        wave_layout.addWidget(QLabel(i18n.translate("status.strength_b")))
-        wave_layout.addWidget(self.b_strength_label)
+        self.wave_layout = QVBoxLayout()
+        self.wave_layout.addWidget(QLabel(i18n.translate("status.strength_a")))
+        self.wave_layout.addWidget(self.a_strength_label)
+        self.wave_layout.addWidget(QLabel(i18n.translate("status.strength_b")))
+        self.wave_layout.addWidget(self.b_strength_label)
         
         # 创建手动控制组件
         self.control_group = QGroupBox(i18n.translate("control.manual"))
