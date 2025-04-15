@@ -143,8 +143,6 @@ class SocketManager:
                 self.signals.connection_changed.emit(False)
                 self.ws = None
                 await asyncio.sleep(reconnect_delay)
-            except Exception as e:
-                self.signals.log_message.emit(f"WebSocket接收消息错误: {str(e)}")
         
     async def _process_message_queue(self):
         """处理消息队列"""
@@ -409,6 +407,7 @@ class SocketManager:
                     logging.info(f"{channel}通道波形数据处理完成，成功: {success_count}/{len(wave_data_list)}")
                     
                 except json.JSONDecodeError as e:
+                    json_str = ""  # 确保变量已定义
                     logging.error(f"波形数据JSON解析失败: {json_str}")
                     logging.error(f"JSON解析错误: {str(e)}")
                 except Exception as e:

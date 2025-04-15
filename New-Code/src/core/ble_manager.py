@@ -192,8 +192,14 @@ class BLEManager:
             return
             
         try:
-            value = await self.client.read_gatt_char(BLE_CHAR_DEVICE_ID)
-            self.device_id = value.hex().upper()
+            # 确保client不为None后再调用read_gatt_char方法
+            value = None  # 初始化value变量
+            if self.client is not None:
+                value = await self.client.read_gatt_char(BLE_CHAR_DEVICE_ID)
+                self.device_id = value.hex().upper()
+            else:
+                self.signals.log_message.emit("无法获取设备ID：客户端未初始化")
+                return
             # 确保信号正确发送
             if hasattr(self.signals, 'device_id_updated'):
                 self.signals.device_id_updated.emit(self.device_id)
@@ -209,7 +215,7 @@ class BLEManager:
         Returns:
             int: 电池电量百分比，如果读取失败则返回None
         """
-        if not self.is_connected:
+        if not self.is_connected or not self.client:
             return None
             
         try:
@@ -230,13 +236,23 @@ class BLEManager:
         Returns:
             int: 信号强度(dBm)，如果读取失败则返回None
         """
-        if not self.is_connected:
+        if not self.is_connected or not self.client:
             return None
             
         try:
+            # 尝试获取信号强度
+            rssi = None
+            # BleakClient没有直接的rssi属性，所以我们直接使用扫描方式获取
+            
+            if rssi is not None:
+                self.signal_strength = rssi
+                logging.debug(f"获取到设备 {self.device_address} 的信号强度: {rssi} dBm")
+                return rssi
+            
+            # 如果client没有rssi属性，尝试使用BleakScanner获取
             scanner = BleakScanner()
             await scanner.start()
-            await asyncio.sleep(3.0)  # 扫描3秒
+            await asyncio.sleep(1.0)  # 减少扫描时间以提高响应速度
             
             # 停止扫描并获取结果
             devices = await scanner.get_discovered_devices()
@@ -244,9 +260,9 @@ class BLEManager:
             
             # 查找匹配的设备
             for device in devices:
-                if device.address.upper() == self.device_address.upper():
+                if self.device_address and device.address and device.address.upper() == self.device_address.upper():
                     self.signal_strength = device.rssi
-                    logging.debug(f"获取到设备 {self.device_address} 的信号强度: {device.rssi} dBm")
+                    logging.debug(f"通过扫描获取到设备 {self.device_address} 的信号强度: {device.rssi} dBm")
                     return device.rssi
             
             # 如果没有找到设备
