@@ -13,8 +13,9 @@ from config.settings import settings
 from ui.main_window import MainWindow
 # 导入setup_logging
 from utils.logger import setup_logging
-# 导入ProtocolConverter
-from core.protocol import ProtocolConverter, BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
+# 导入ProtocolConverter和常量
+from core.protocol.converter import ProtocolConverter
+from core.protocol.constants import BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 
 def main():
     """应用程序主入口"""

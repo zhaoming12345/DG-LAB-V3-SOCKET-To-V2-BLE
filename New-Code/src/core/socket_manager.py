@@ -4,7 +4,7 @@ import websockets
 import re
 import logging
 from config.settings import settings
-from core.protocol import ProtocolConverter
+from core.protocol.converter import ProtocolConverter
 from config.constants import BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 
 class SocketManager:
