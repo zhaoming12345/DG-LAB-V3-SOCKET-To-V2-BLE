@@ -1,4 +1,4 @@
-import os  # 导入os模块，用于处理文件路径和检查文件是否存在
+import os
 
 def get_style(accent_color, background_image=None):
     """

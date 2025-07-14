@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QMessageBox, QGroupBox
+    QPushButton, QLabel, QGroupBox
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 from qasync import asyncSlot
 import logging
 import sys
@@ -14,8 +14,6 @@ from utils.signals import DeviceSignals
 from utils.i18n import i18n
 from core.ble_manager import BLEManager
 from core.socket_manager import SocketManager
-# 修正导入路径
-from core.protocol import ProtocolConverter, BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 from config.settings import settings
 
 from .components import (

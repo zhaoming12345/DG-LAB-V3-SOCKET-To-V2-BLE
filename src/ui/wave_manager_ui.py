@@ -1,7 +1,5 @@
-from PySide6.QtCore import QTimer
 from collections import deque
 import pyqtgraph as pg
-import numpy as np
 from utils.i18n import i18n
 import logging
 

@@ -1,0 +1,5 @@
+PySide6>=6.4.0
+qasync>=0.27.1
+asyncio>=3.4.0
+logging>=0.4.9.6
+pydglab>=1.0.0

@@ -1,6 +1,6 @@
 import functools
 import asyncio
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import Slot
 
 def asyncSlot(*args, **kwargs):
     """异步槽函数装饰器

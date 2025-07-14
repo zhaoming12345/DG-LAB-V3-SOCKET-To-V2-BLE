@@ -1,7 +1,6 @@
 import logging
 import asyncio
-from pydglab import dglab_v3
-from config.settings import settings
+import pydglab
 
 class BLEManager:
     def __init__(self, signals):
@@ -15,7 +14,7 @@ class BLEManager:
         self.is_connected = False  # 是否已连接属性
         self.device_address = None  # 设备蓝牙MAC地址属性
 
-    async def send_command(self, channel, strength_type, strength_value):
+    async def send_command(self, channel, strength_value):
         """发送命令到BLE设备
         
         Args:

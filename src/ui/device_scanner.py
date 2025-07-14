@@ -1,15 +1,13 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
-    QListWidget, QLabel, QWidget, QListWidgetItem  # 添加 QListWidgetItem
+    QListWidget, QLabel, QListWidgetItem
 )
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont
 from utils.i18n import i18n
 from utils.async_utils import asyncSlot
 from .styles import get_style
-from config.settings import settings  # 添加这一行导入settings模块
 import logging
-import pyqtgraph as pg  # 添加这一行导入pyqtgraph模块
+import pyqtgraph as pg
 
 class DeviceScanner(QDialog):
     def __init__(self, parent, ble_manager):

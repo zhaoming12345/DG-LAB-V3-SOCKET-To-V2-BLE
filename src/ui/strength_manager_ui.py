@@ -1,8 +1,6 @@
-from PySide6.QtWidgets import QMessageBox
 from qasync import asyncSlot
 import asyncio
 import logging
-from utils.i18n import i18n
 from config.settings import settings
 
 class StrengthManagerUI:

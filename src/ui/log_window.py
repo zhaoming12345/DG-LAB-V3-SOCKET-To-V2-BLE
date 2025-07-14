@@ -5,8 +5,8 @@ from datetime import datetime
 from utils.i18n import i18n
 from .styles import get_style
 import logging
-from utils.logger import log_emitter  # 导入日志信号发射器
-from config.settings import settings  # 导入settings
+from utils.logger import log_emitter
+from config.settings import settings
 
 class LogWindow(QMainWindow):
     # 添加关闭信号

@@ -1,11 +1,8 @@
 import asyncio
 import json
 import websockets
-import re
 import logging
 from config.settings import settings
-from core.protocol.converter import ProtocolConverter
-from config.constants import BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2
 
 class SocketManager:
     # 在类的__init__方法中添加消息队列

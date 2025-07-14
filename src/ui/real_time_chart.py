@@ -1,9 +1,7 @@
 import pyqtgraph as pg
 import numpy as np
 from PySide6.QtWidgets import QWidget, QVBoxLayout
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap, QImage
-from config.settings import settings
+from PySide6.QtGui import QImage
 import os
 
 class RealTimeChart(QWidget):
