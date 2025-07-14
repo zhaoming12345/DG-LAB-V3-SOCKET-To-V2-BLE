@@ -80,10 +80,6 @@ class DeviceManagerUI:
                 self.signals.log_message.emit(i18n.translate("status_updates.bluetooth_connected"))
                 logging.info(f"设备连接成功: {device_name} ({device_address})")
                 
-                # 立即读取初始状态
-                await self.update_battery()
-                await self.update_signal_strength()
-                
                 # 启动定时器
                 logging.info("启动电池和信号强度更新定时器")
                 self.main_window.battery_update_timer.start()
@@ -103,7 +99,7 @@ class DeviceManagerUI:
         """更新电池电量"""
         try:
             if self.ble_manager.is_connected:
-                battery_level = await self.ble_manager.read_battery()
+                battery_level = await self.ble_manager.get_batterylevel()
                 if battery_level is not None:
                     self.main_window.battery_status.setText(i18n.translate("status.battery", battery_level))
                     self.signals.battery_update.emit(battery_level)

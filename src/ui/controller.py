@@ -64,7 +64,7 @@ class Controller:
     async def disconnect_all(self):
         """断开所有连接"""
         # 断开蓝牙连接
-        if self.ble_manager.is_connected:
+        if self.ble_manager.connected:
             await self.ble_manager.disconnect()
             self.signals.log_message.emit(i18n.translate("status_updates.bluetooth_disconnected"))
             

@@ -1,0 +1,3 @@
+[submodule "DGLAB-python-driver"]
+	path = DGLAB-python-driver
+	url = https://github.com/shilapi/DGLAB-python-driver

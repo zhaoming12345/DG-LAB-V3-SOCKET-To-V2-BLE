@@ -1,8 +1,6 @@
 # DG-LAB-V3-SOCKET-To-V2-BLE
 ### DG-LAB-E-STIM-Power-Box-V3-SOCKET-Protocol-To-V2-Bluetooth-Protocol-Converter
 
-# 该项目已重构，具体信息请点击[此处](/Reconstruction-Announcement.md)查看。
-
 ## 介绍：
 
 这是一个 Python 项目，用于让2.0主机支持 SOCKET 控制

@@ -1,17 +1,7 @@
 import logging
-import struct
-import asyncio  # 添加asyncio导入
-from bleak import BleakClient, BleakScanner
-from bleak.exc import BleakError
-from bleak.backends.scanner import AdvertisementData
-from bleak.backends.device import BLEDevice
-from config.constants import (
-    BLE_SERVICE_UUID, BLE_CHAR_DEVICE_ID, BLE_CHAR_BATTERY,
-    BLE_CHAR_PWM_A34, BLE_CHAR_PWM_B34, BLE_CHAR_PWM_AB2,
-    DEFAULT_MAX_STRENGTH
-)
+import asyncio
+from pydglab import dglab_v3
 from config.settings import settings
-from core.protocol import ProtocolConverter
 
 class BLEManager:
     def __init__(self, signals):
@@ -21,46 +11,34 @@ class BLEManager:
             signals (DeviceSignals): 信号对象，用于UI通信
         """
         self.signals = signals
-        self.client = None  # 使用client替代device
+        self.driver = None  # DGLAB驱动实例
         self.is_connected = False  # 是否已连接属性
-        self.has_bluetooth = False  # 当前设备蓝牙功能是否可用属性
-        self.device_id = None  # 设备ID属性
         self.device_address = None  # 设备蓝牙MAC地址属性
-        self.battery_level = None  # 电池电量属性
-        self.signal_strength = None  # 信号强度属性
-        self.current_strength = {'A': 0, 'B': 0}  # 当前强度属性
-        
-        # 从设置中加载最大强度值
-        self.max_strength = {
-            'A': settings.max_strength_a, 
-            'B': settings.max_strength_b
-        }
 
-    async def send_command(self, char_uuid, data):
+    async def send_command(self, channel, strength_type, strength_value):
         """发送命令到BLE设备
         
         Args:
-            char_uuid (str): 特征值UUID
-            data (bytes): 要发送的数据
+            channel (int): 通道号(1=A, 2=B)
+            strength_type (int): 强度类型(1=频率, 2=强度)
+            strength_value (int): 强度值(0-100)
             
         Returns:
             bool: 命令是否发送成功
         """
-        if not self.is_connected or not self.client:
+        if not self.is_connected or not self.driver:
             self.signals.log_message.emit("设备未连接")
             logging.error("发送命令失败: 设备未连接")
             return False
             
         try:
-            # 确保数据是bytes类型
-            if not isinstance(data, bytes):
-                data = bytes(data)
+            # 使用DGLAB驱动发送命令
+            if channel == 1:  # A通道
+                await self.driver.set_strength_sync(strength_value, 0)
+            else:  # B通道
+                await self.driver.set_strength_sync(0, strength_value)
                 
-            # 记录发送的数据
-            logging.info(f"发送命令到特征值 {char_uuid}: {data.hex()}")
-            
-            await self.client.write_gatt_char(char_uuid, data)
-            self.signals.log_message.emit(f"命令发送成功 (特征值: {char_uuid})")
+            self.signals.log_message.emit(f"命令发送成功 (通道: {channel})")
             return True
         except Exception as e:
             self.signals.log_message.emit(f"命令发送失败: {str(e)}")
@@ -80,20 +58,19 @@ class BLEManager:
             self.signals.log_message.emit(f"正在连接蓝牙设备: {address}")
             logging.info(f"正在连接蓝牙设备: {address}")
             
-            self.client = BleakClient(address)
-            await self.client.connect()
+            # 使用DGLAB驱动连接
+            self.driver = dglab_v3(address)
+            await self.driver.create()
             self.is_connected = True
             self.device_address = address
             
             self.signals.log_message.emit(f"蓝牙设备连接成功: {address}")
             logging.info(f"蓝牙设备连接成功: {address}")
-            
-            await self.get_device_id()
             self.signals.connection_changed.emit(True)
             return True
         except Exception as e:
             self.is_connected = False
-            self.client = None
+            self.driver = None
             self.device_address = None
             self.signals.log_message.emit(f"蓝牙设备连接失败: {str(e)}")
             logging.error(f"蓝牙设备连接失败: {address}, 错误={str(e)}")
@@ -102,14 +79,14 @@ class BLEManager:
             
     async def disconnect(self):
         """断开蓝牙设备连接"""
-        if self.client and self.is_connected:
+        if self.driver and self.is_connected:
             try:
-                await self.client.disconnect()
+                await self.driver.close()
             except Exception as e:
                 logging.error(f"断开设备连接时发生错误: {str(e)}")
             finally:
                 self.is_connected = False
-                self.client = None
+                self.driver = None
                 self.device_address = None
                 self.signals.connection_changed.emit(False)
 
