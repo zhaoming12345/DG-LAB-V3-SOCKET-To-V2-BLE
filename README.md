@@ -11,30 +11,11 @@
 
 ###### ~~在Windows上开发，目前尚未在Linux上测试，已有在PVE虚拟机上测试的计划~~
 
-## 需要安装的依赖列表：
-
- - Python 3.6+
- - PySide6
- - qasync
- - websockets
- - bleak
- - pyqtgraph
-
-###### 离线编译构建在计划中，以后可能不再需要安装依赖和使用终端命令行启动
-
-### 安装指令：
-
-```bash
-pip install pyside6 qasync websockets bleak pyqtgraph
-```
-
 ## 预览图：
 
 ![PV1 0 0semver](https://github.com/user-attachments/assets/c89893bb-31cb-4d10-a38f-d178d345a2b5)
 
-## ToDoList：
-
-### 此处的ToDolist为该项目的全局ToDolist，在新程序稳定可用之前不会推进，目前只会推进新程序的ToDolist，有关新程序的ToDolist及其他更多信息，请点击[此处](/Reconstruction-Announcement.md)查看
+## ToDolist
 
  - [x] 修复回调数据（有待验证）
  - [ ] 添加更多语言
@@ -76,9 +57,3 @@ SMS（短信）：+8615015015297
 ## 其他杂项：
 
 [介绍和教程视频](https://www.bilibili.com/video/BV1uMQzYaEZK/)
-
-# 为防止郊狼官方给我寄律师函，声明一下：本项目作者完全理解认同且愿意遵守官方仓库中的“禁止商用”条款，本项目作者绝对不会而且也强烈反对将该项目的任何一切资源（包括但不限于代码、文档、图片等）用于商业用途，如果官方发现该项目的任何资源被用于了商业用途，绝非本项目作者指使/协助/支持，请勿制裁我，可直接制裁将该项目资源用于商业用途的人
-
-## 为进一步防止官方找上门来，本项目已使用[Peer Production License对等生产许可证（PPL）](LICENSE)保护
-
-~~*注：本项目绝大多数的代码在编写时都用到了人工智能，如果您反感或看不起使用人工智能编写代码的人，请勿使用本项目*~~
